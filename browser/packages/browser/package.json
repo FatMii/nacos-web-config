@@ -10,7 +10,7 @@
     "url": "git+https://github.com/FatMii/nacos-web-config.git",
     "directory": "browser/packages/browser"
   },
-  "homepage": "https://github.com/FatMii/nacos-web-config#readme",
+  "homepage": "https://fatmii.github.io/nacos-web-config/",
   "bugs": { "url": "https://github.com/FatMii/nacos-web-config/issues" },
   "publishConfig": { "access": "public" },
   "engines": { "node": ">=18" },

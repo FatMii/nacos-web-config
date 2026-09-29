@@ -1,6 +1,6 @@
 # @fatmii/nacos-web-config
 
-Browser SDK for [Nacos Web Config](https://github.com/FatMii/nacos-web-config). Receives whitelisted
+Browser SDK for [Nacos Web Config](https://fatmii.github.io/nacos-web-config/). Receives whitelisted
 Nacos JSON over a same-origin SSE stream from your Spring Boot backend. TypeScript ESM, no runtime
 dependencies.
 
