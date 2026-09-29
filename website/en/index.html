@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="icon" type="image/x-icon" href="../favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<title>Nacos Web Config — Let the browser safely receive only the Nacos JSON configs you allow</title>
+<meta name="description" content="Let the browser safely receive only the Nacos JSON configs you allow. Change a config, and the page updates. Spring Boot Starter + browser SDK, same-origin SSE.">
+<link rel="canonical" href="https://fatmii.github.io/nacos-web-config/en/">
+<link rel="alternate" hreflang="zh-CN" href="https://fatmii.github.io/nacos-web-config/">
+<link rel="alternate" hreflang="en" href="https://fatmii.github.io/nacos-web-config/en/">
+<link rel="alternate" hreflang="x-default" href="https://fatmii.github.io/nacos-web-config/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Nacos Web Config">
+<meta property="og:description" content="Let the browser safely receive only the Nacos JSON configs you allow. Change a config, and the page updates.">
+<link rel="stylesheet" href="../index.css?v=20260929k">
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="brand" href="../">
+    <span class="brand-mark">W</span>
+    <span class="brand-name">Nacos Web Config</span>
+  </a>
+  <div class="nav-actions">
+    <div class="nav-links">
+      <a href="#why">Why</a>
+      <a href="#quickstart">Quick Start</a>
+      <a href="https://github.com/FatMii/nacos-web-config" target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+    <div class="nav-util">
+      <a class="lang-switch" href="../" lang="zh-CN" hreflang="zh-CN">中文</a>
+      <button class="theme-toggle" type="button" id="theme-toggle" data-label-dark="Night" data-label-light="Light">Night</button>
+    </div>
+    <a class="install-mini" href="#quickstart">Get started</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============ HERO ============ -->
+<section class="hero-focus" aria-labelledby="hero-title">
+  <h1 id="hero-title">Let the browser safely receive only the Nacos JSON configs you allow</h1>
+  <ul class="hero-what" aria-label="What it is">
+    <li>A Spring Boot <strong>starter</strong> you add to an existing app (no extra service to run)</li>
+    <li>A small <strong>browser SDK</strong> (TypeScript ESM, no runtime dependencies)</li>
+    <li>A <strong>read-only</strong> path: the page only gets the JSON configs you explicitly allow</li>
+  </ul>
+  <div class="actions">
+    <a class="button primary" href="#demo">See the demo</a>
+    <a class="button" href="https://github.com/FatMii/nacos-web-config" target="_blank" rel="noreferrer">GitHub</a>
+  </div>
+  <ul class="proof" aria-label="Product highlights">
+    <li><strong>Apache-2.0</strong> open source</li>
+    <li><strong>Whitelist</strong> read-only</li>
+    <li><strong>Java 17+</strong> · Spring Boot 3</li>
+    <li><strong>v0.1.0</strong> released</li>
+  </ul>
+</section>
+
+<!-- ============ DEMO ============ -->
+<section class="hero-demo" id="demo" aria-label="Product demo">
+  <div class="hero-demo-wrap">
+    <div class="browser-frame">
+      <div class="window-chrome">
+        <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="window-url">Nacos console → your backend /_web-config/v1/stream → user page</div>
+        <div class="window-badge">SSE</div>
+      </div>
+      <div class="demo-stage">
+        <div class="demo-pane demo-nacos">
+          <div class="pane-head"><span class="pane-title">Nacos Console</span><span class="pane-meta">WEB_DEMO / web-demo.public.json</span></div>
+          <pre class="demo-json" id="demo-json"></pre>
+        </div>
+        <div class="demo-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Starter watches<br>same-origin push</span>
+        </div>
+        <div class="demo-pane demo-page">
+          <div class="pane-head"><span class="pane-title">User Page</span><span class="pane-meta">config.subscribe('ui', …)</span></div>
+          <div class="mock-page">
+            <div class="mock-nav"><span class="mock-logo"></span><span class="mock-pill"></span><span class="mock-pill"></span></div>
+            <div class="mock-banner" id="demo-banner">Announcement slot · waiting for push…</div>
+            <div class="mock-block wide"></div>
+            <div class="mock-block"></div><div class="mock-block"></div><div class="mock-block"></div>
+          </div>
+        </div>
+      </div>
+      <div class="demo-stream" aria-label="SSE event log (simulated)">
+        <span class="stream-label">SSE events</span>
+        <ul id="demo-events" class="stream-log"></ul>
+      </div>
+    </div>
+    <p class="demo-caption">Simulated demo: left is the JSON config in Nacos; right is the browser page after each push.</p>
+  </div>
+</section>
+
+<!-- ============ PAIN ============ -->
+<section class="pain-strip" id="why" aria-labelledby="pain-title">
+  <div class="section-head">
+    <h2 id="pain-title">Why you need it</h2>
+    <div class="pain-lead">
+      <p>Banners, feature flags, and campaign copy often live in Nacos.</p>
+      <p>Ops wants the live page to change as soon as they publish—not after the next frontend release.</p>
+      <p>But the page should not talk to Nacos itself.</p>
+      <p>So let your Spring Boot app talk to Nacos, and let the page talk only to your app. You list which names the page may see; the backend checks them and pushes updates.</p>
+    </div>
+  </div>
+  <div class="table-wrap compare-wrap">
+    <table>
+      <thead><tr><th>Scenario</th><th>Homegrown / direct access</th><th>nacos-web-config</th></tr></thead>
+      <tbody>
+        <tr><td>Where credentials live</td><td>Easy to put in the frontend; a stolen account can change or delete configs</td><td><strong>Credentials stay on the backend</strong></td></tr>
+        <tr><td>How much you can open</td><td>Nacos authorizes by namespace; you cannot open just one config</td><td><strong>Only the names you list</strong></td></tr>
+        <tr><td>Exposure of Nacos</td><td>Opening it to the public risks taking the config center down</td><td><strong>The page talks only to your backend</strong></td></tr>
+        <tr><td>Ops publishes bad JSON</td><td>Rules are yours; the page often breaks</td><td><strong>Drop bad data; keep the last good value</strong></td></tr>
+        <tr><td>Show updates soon after publish</td><td>Keep polling, or build push yourself</td><td><strong>Backend pushes changes</strong></td></tr>
+        <tr><td>Nacos is briefly down</td><td>You invent the behavior</td><td><strong>Values on the page are not cleared</strong></td></tr>
+        <tr><td>Integration cost</td><td>Cache, protocol, tests</td><td><strong>Dependency + YAML + <code>subscribe()</code></strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="pain-aside"><strong>When you do not need this library:</strong> If you do not need live updates, a plain GET plus a timer is enough.</p>
+</section>
+
+<!-- ============ ARCHITECTURE ============ -->
+<section class="arch-section" id="architecture" aria-labelledby="arch-title">
+  <div class="section-head">
+    <h2 id="arch-title">How data flows</h2>
+    <p>No extra process, database, or admin console. Install it on the Spring Boot app that serves browsers.</p>
+  </div>
+  <div class="flow" role="img" aria-label="Architecture: Nacos is watched by the Spring Boot Starter, which pushes over same-origin SSE to the Browser SDK, which feeds the page">
+    <div class="flow-node">
+      <span class="flow-tag">Config center</span>
+      <strong>Nacos</strong>
+      <p>Ops publish and edit JSON configs here</p>
+    </div>
+    <div class="flow-link"><span>watch</span></div>
+    <div class="flow-node flow-accent">
+      <span class="flow-tag">Your backend</span>
+      <strong>Spring Boot Starter</strong>
+      <p>Whitelist · validate · push</p>
+    </div>
+    <div class="flow-link"><span>HTTP/SSE<br>same-origin</span></div>
+    <div class="flow-node">
+      <span class="flow-tag">Browser SDK</span>
+      <strong>Browser SDK</strong>
+      <p>Subscribe · reject out-of-order · optional decode</p>
+    </div>
+    <div class="flow-link"><span>subscribe</span></div>
+    <div class="flow-node">
+      <span class="flow-tag">Page</span>
+      <strong>Page</strong>
+      <p>Sees only declared logical names</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SPOTLIGHT ============ -->
+<section class="spotlight-group" aria-label="Authorization lives in YAML">
+  <article class="spotlight reverse">
+    <div class="spotlight-media">
+      <div class="code" data-file="application.yml">
+        <pre><code><span class="p">nacos-web-config</span>:
+  <span class="p">enabled</span>: <span class="k">true</span>          <span class="c"># off unless explicitly enabled</span>
+  <span class="p">access</span>: <span class="s">public</span>        <span class="c"># required: public | authenticated</span>
+  <span class="p">nacos</span>:
+    <span class="p">server-addr</span>: <span class="s">127.0.0.1:8848</span>
+  <span class="p">exposures</span>:              <span class="c"># whitelist: logical key → fixed Nacos coordinates</span>
+    <span class="p">ui</span>:
+      <span class="p">group</span>: <span class="s">WEB_DEMO</span>
+      <span class="p">data-id</span>: <span class="s">web-demo.public.json</span>
+      <span class="p">max-bytes</span>: <span class="n">65536</span></code></pre>
+      </div>
+    </div>
+    <div class="spotlight-copy">
+      <ul class="tag-list"><li class="tag">YAML</li><li class="tag">Whitelist</li></ul>
+      <h3>Authorization lives in YAML</h3>
+      <p>What may leave the server is decided by the whitelist: each logical key maps to fixed Nacos coordinates plus a byte cap. Login and auth stay with the host security chain. The starter does not invent its own.</p>
+    </div>
+  </article>
+</section>
+
+<!-- ============ QUICKSTART ============ -->
+<section class="quickstart" id="quickstart" aria-labelledby="qs-title">
+  <div class="section-head">
+    <h2 id="qs-title">Quick start</h2>
+    <p>Add the starter and whitelist on the backend, subscribe on the frontend. Full options are in the GitHub README “Configuration reference”.</p>
+  </div>
+  <ol class="qs-steps">
+    <li class="qs-step">
+      <div class="qs-step-head"><span class="step-num">Step 1</span><h3>Backend: add the starter and declare the whitelist</h3></div>
+      <div class="qs-codes">
+        <div class="code" data-file="pom.xml">
+<pre><code><span class="t">&lt;dependency&gt;</span>
+  <span class="t">&lt;groupId&gt;</span>io.github.fatmii.nacoswebconfig<span class="t">&lt;/groupId&gt;</span>
+  <span class="t">&lt;artifactId&gt;</span>nacos-web-config-spring-boot-starter<span class="t">&lt;/artifactId&gt;</span>
+  <span class="t">&lt;version&gt;</span>0.1.0<span class="t">&lt;/version&gt;</span>
+<span class="t">&lt;/dependency&gt;</span></code></pre>
+        </div>
+        <div class="code" data-file="application.yml">
+<pre><code><span class="p">nacos-web-config</span>:
+  <span class="p">enabled</span>: <span class="k">true</span>
+  <span class="p">access</span>: <span class="s">public</span>
+  <span class="p">nacos</span>:
+    <span class="p">server-addr</span>: <span class="s">127.0.0.1:8848</span>
+  <span class="p">exposures</span>:
+    <span class="p">ui</span>:
+      <span class="p">group</span>: <span class="s">WEB_DEMO</span>
+      <span class="p">data-id</span>: <span class="s">web-demo.public.json</span>
+      <span class="p">max-bytes</span>: <span class="n">65536</span></code></pre>
+        </div>
+      </div>
+      <p class="qs-note">This exposes the SSE endpoint at <code>/_web-config/v1/stream</code> (override with <code>path</code>). Choose <code>access</code>: <code>public</code> (anyone who reaches the endpoint may read the whitelist) or <code>authenticated</code> (a stream opens only when the request already has a signed-in identity).</p>
+    </li>
+    <li class="qs-step">
+      <div class="qs-step-head"><span class="step-num">Step 2</span><h3>Frontend: subscribe</h3></div>
+      <div class="code" data-file="terminal + TypeScript">
+<pre><code><span class="d">$</span> npm install @fatmii/nacos-web-config</code></pre>
+<pre><code><span class="k">import</span> { createWebConfig } <span class="k">from</span> <span class="s">'@fatmii/nacos-web-config'</span>
+
+<span class="c">// endpoint defaults to /_web-config/v1/stream; decode is optional</span>
+<span class="k">const</span> config = createWebConfig({
+  definitions: {
+    ui: { fallback: { announcement: <span class="s">''</span> } },
+  },
+})
+
+<span class="k">const</span> unsubscribe = config.subscribe(<span class="s">'ui'</span>, state =&gt; {
+  renderAnnouncement(state.value?.announcement ?? <span class="s">''</span>)
+})
+<span class="c">// config.get('ui') reads current state; the shared connection opens on the first subscribe()</span></code></pre>
+      </div>
+    </li>
+    <li class="qs-step">
+      <div class="qs-step-head"><span class="step-num">Step 3</span><h3>Local demo</h3></div>
+      <div class="code" data-file="PowerShell">
+<pre><code><span class="c"># Needs JDK 17, Maven, and Docker that can run linux/amd64</span>
+<span class="d">$</span> cd dev-environment
+<span class="d">$</span> docker compose --project-name nacos-web-config-local up -d nacos2
+<span class="c"># wait until http://127.0.0.1:18848/nacos responds</span>
+
+<span class="d">$</span> cd ..\java
+<span class="d">$</span> $env:NACOS_SERVER_ADDR='127.0.0.1:18848'
+<span class="d">$</span> mvn -pl examples/spring-mvc -am spring-boot:run</code></pre>
+      </div>
+      <p class="qs-note">Open <code>http://127.0.0.1:8080/</code>, publish <code>web-demo.public.json</code> under group <code>WEB_DEMO</code> in Nacos (e.g. <code>{"announcement":"hello"}</code>). The page should update within a few seconds. More detail: <code>java/examples/spring-mvc/</code> and <code>dev-environment/</code> in the repo.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============ COMPAT ============ -->
+<section class="compat" id="compat" aria-labelledby="compat-title">
+  <div class="section-head">
+    <h2 id="compat-title">Compatibility</h2>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Dependency</th><th>Version</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Java</td><td><code>17+</code></td><td>Spring Boot 3.x, servlet/MVC</td></tr>
+        <tr><td>Nacos client</td><td><code>2.5.3</code></td><td>single supported client line</td></tr>
+        <tr><td>Nacos server</td><td><code>2.5.3</code></td><td>full chain verified (Java tests + browser E2E)</td></tr>
+        <tr><td>Nacos server</td><td><code>3.2.3</code></td><td>Java adapter IT only; no full browser-chain claim</td></tr>
+        <tr><td>Browsers</td><td>modern</td><td><code>fetch</code> + <code>ReadableStream</code>; no EventSource fallback</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="faq-section" id="faq" aria-labelledby="faq-title">
+  <div class="faq-head">
+    <h2 id="faq-title">FAQ</h2>
+  </div>
+  <div class="faq-list">
+    <details class="faq-item">
+      <summary>Does Nacos get exposed to the frontend?</summary>
+      <div class="faq-answer"><p>No. The browser only talks to a same-origin SSE endpoint on your own backend and can only reach logical keys explicitly declared in the YAML whitelist. The Nacos address, credentials, group / dataId / namespace never pass through the browser.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Why can't the browser talk to Nacos directly?</summary>
+      <div class="faq-answer"><p>A password in JS is visible to anyone, and a Nacos account can change configs. Nacos also cannot expose “only this one config” to a page. Opening it to the public risks taking the config center down. Let your backend talk to Nacos. The page talks only to your backend, and only gets the configs you allowed beforehand.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Why SSE instead of polling or WebSocket?</summary>
+      <div class="faq-answer"><p>This is one-way config push. SSE is ordinary HTTP: same-origin, reuses your auth and gateways, cheap in the browser. The protocol carries monotonic sequence numbers and a stream ID; snapshots precede deltas; out-of-order events are rejected; reconnects refetch a snapshot. Polling cannot do that. WebSocket leaves you to build it.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Why not just expose one plain endpoint and poll it?</summary>
+      <div class="faq-answer"><p>If you do not need live updates, a plain GET plus a timer is enough. If you need only named configs on the page, bad data that does not break the UI, and push after publish, this project is a better fit.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>How does authentication work?</summary>
+      <div class="faq-answer"><p><code>access</code> is <code>public</code> or <code>authenticated</code>, and must be set or startup fails. <code>public</code>: anyone who reaches the endpoint may read the whitelist (read-only). <code>authenticated</code>: a stream opens only when the request already has a principal. The starter checks <code>getUserPrincipal()</code>; it does not log anyone in. With no login wiring, every call is 401. The level is per stream, not per key.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>What if ops publishes a broken config?</summary>
+      <div class="faq-answer"><p>Content is hard-validated: it must be a JSON object within <code>max-bytes</code>. Non-conforming content is rejected and never overwrites the last known good value. If Nacos as a whole is unreachable, data is merely marked stale and pages keep rendering the last valid config.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>What are the limitations?</summary>
+      <div class="faq-answer"><ul>
+        <li>Nacos 3.2.3 support is adapter-level only.</li>
+        <li>Servlet MVC only; no WebFlux variant.</li>
+        <li>Values must be JSON objects under <code>max-bytes</code>.</li>
+        <li>ESM-only SDK; older browsers need your own bundler/polyfill.</li>
+        <li>No admin UI; create and edit configs in Nacos.</li>
+      </ul></div>
+    </details>
+    <details class="faq-item">
+      <summary>Is there a full configuration reference?</summary>
+      <div class="faq-answer"><p>Yes. The README “Configuration reference” is a full YAML sample with defaults and inline comments for every field. One principle: any invalid value fails startup with a precise message—nothing is silently defaulted.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Does exposing several configs mean several connections?</summary>
+      <div class="faq-answer"><p>No. The whole whitelist of one backend instance shares a single connection: the browser puts every subscribed key on one request (32 keys per connection by default), the first snapshot carries all of them, and later each changed key is pushed individually. An instance serves exactly one namespace; spanning namespaces means another instance.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Adding a new exposed config — does that mean rebuilding and redeploying?</summary>
+      <div class="faq-answer"><p>No business-code change: add one allowed entry in <code>application.yml</code> and restart. Add the same name under frontend <code>definitions</code>. Fields that change often can live in one JSON object, so ops edits go live without adding more public entries.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Does the frontend require a specific framework?</summary>
+      <div class="faq-answer"><p>No framework lock-in. The SDK is a TypeScript library with a plain <code>subscribe</code> / <code>get</code> model—use it from React, Vue, or vanilla pages. It requires a modern browser with <code>fetch</code> + <code>ReadableStream</code> support.</p></div>
+    </details>
+  </div>
+  <p class="faq-foot">More detail: <a href="https://github.com/FatMii/nacos-web-config/blob/main/README.md" target="_blank" rel="noreferrer">GitHub README</a></p>
+</section>
+
+<!-- ============ GET ============ -->
+<section class="install-section" id="install">
+  <div class="install-head">
+    <h2>Get it</h2>
+    <p>0.1.0 is on Maven Central and npm. Add a dependency or run <code>npm install</code>.</p>
+  </div>
+  <div class="install-paths">
+    <article class="install-path recommended">
+      <h3>Maven Central <span class="path-badge">Published</span></h3>
+      <p><code>io.github.fatmii.nacoswebconfig:nacos-web-config-spring-boot-starter:0.1.0</code>; seven artifacts in all, counting the parent POM, core and adapters, each GPG-signed.</p>
+      <a class="button primary" href="https://central.sonatype.com/artifact/io.github.fatmii.nacoswebconfig/nacos-web-config-spring-boot-starter" target="_blank" rel="noreferrer">View artifact</a>
+    </article>
+    <article class="install-path">
+      <h3>npm <span class="path-badge">Published</span></h3>
+      <p><code>npm install @fatmii/nacos-web-config</code>, version 0.1.0 — TypeScript ESM, no runtime dependencies.</p>
+      <a class="button primary" href="https://www.npmjs.com/package/@fatmii/nacos-web-config" target="_blank" rel="noreferrer">View package</a>
+    </article>
+    <article class="install-path">
+      <h3>Build from source</h3>
+      <p>With JDK 17+, Maven and Node.js: run <code>mvn verify</code> under <code>java/</code>, and <code>npm ci && npm test && npm run build</code> under <code>browser/</code>.</p>
+      <a class="button" href="https://github.com/FatMii/nacos-web-config/blob/main/CONTRIBUTING.md" target="_blank" rel="noreferrer">Build instructions</a>
+    </article>
+  </div>
+  <p class="install-foot">You can also build from <a href="https://github.com/FatMii/nacos-web-config" target="_blank" rel="noreferrer">GitHub source</a>. Please do not file public issues for vulnerabilities — see <a href="https://github.com/FatMii/nacos-web-config/blob/main/SECURITY.md" target="_blank" rel="noreferrer">SECURITY.md</a>.</p>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <p>
+    Nacos Web Config · Apache-2.0 ·
+    <a href="https://github.com/FatMii/nacos-web-config/blob/main/README.md" target="_blank" rel="noreferrer">README</a> ·
+    <a href="https://github.com/FatMii/nacos-web-config" target="_blank" rel="noreferrer">GitHub</a> ·
+    v0.1.0 released
+  </p>
+</footer>
+
+<script src="../index.js"></script>
+</body>
+</html>

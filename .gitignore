@@ -1,0 +1,38 @@
+# Credentials / local secrets (never commit)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.auth
+
+# Java / Maven build outputs
+**/target/
+.m2-repository/
+**/*.class
+**/*.jar
+**/*.war
+!**/*.jar.sha256
+!**/lib/.gitkeep
+
+# Browser / npm build outputs
+**/node_modules/
+**/dist/
+**/coverage/
+browser/.npm-cache/
+
+# Local build / pack output (not for commit)
+build/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Local runtime noise
+**/run-*.log
+hs_err_pid*
+replay_pid*

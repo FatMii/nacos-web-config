@@ -1,0 +1,98 @@
+name: Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  # Pinned scanner versions. Bump deliberately together with the audit report.
+  TRIVY_VERSION: 0.74.0
+  CYCLONEDX_VERSION: 2.9.3
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  java:
+    name: Java 17 reactor
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: java/pom.xml
+      - name: Verify all Java modules
+        working-directory: java
+        run: mvn --batch-mode --no-transfer-progress verify
+
+  browser:
+    name: Browser SDK
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: browser/package-lock.json
+      - name: Install locked dependencies
+        working-directory: browser
+        run: npm ci
+      - name: Run behavior tests
+        working-directory: browser
+        run: npm test
+      - name: Build ESM and type declarations
+        working-directory: browser
+        run: npm run build
+      - name: Inspect publish payload
+        working-directory: browser
+        run: npm pack --workspace @fatmii/nacos-web-config --dry-run
+      - name: Audit production dependencies
+        working-directory: browser
+        run: npm audit --omit=dev --audit-level=high
+
+  security:
+    name: SBOM and vulnerability scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Gate is live: HIGH/CRITICAL findings fail the build. Observation period
+      # ended after five consecutive zero-finding green rounds (since b6cf263).
+      # If a newly disclosed CVE in a pinned dependency blocks work, triage the
+      # upgrade first; downgrade to report-only only with a recorded decision.
+      SCAN_EXIT_CODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: java/pom.xml
+      - name: Generate aggregate SBOM (CycloneDX, pinned)
+        working-directory: java
+        run: mvn --batch-mode --no-transfer-progress org.cyclonedx:cyclonedx-maven-plugin:${{ env.CYCLONEDX_VERSION }}:makeAggregateBom
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyclonedx-sbom
+          path: java/target/bom.json
+      - uses: aquasecurity/setup-trivy@v0.3.1
+        with:
+          trivy-version: v${{ env.TRIVY_VERSION }}
+      - name: Scan Java SBOM for vulnerabilities
+        run: trivy sbom --severity HIGH,CRITICAL --exit-code "${SCAN_EXIT_CODE}" java/target/bom.json
+      - name: List Java third-party licenses from SBOM
+        run: trivy sbom --scanners license --exit-code 0 java/target/bom.json
+      - name: Scan npm lockfile for vulnerabilities
+        run: trivy fs --scanners vuln --severity HIGH,CRITICAL --exit-code "${SCAN_EXIT_CODE}" browser/package-lock.json

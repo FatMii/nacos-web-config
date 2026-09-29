@@ -1,0 +1,9 @@
+* text=auto
+*.jar binary
+*.tgz binary
+*.zip binary
+*.png binary
+*.gif binary
+*.jpg binary
+*.ico binary
+*.svg text

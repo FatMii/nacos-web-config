@@ -1,0 +1,24 @@
+# Optional override: enable Nacos API auth. Use with compose.yaml.
+# Separate volumes so no-auth local data is not mixed.
+# Example:
+#   docker compose --project-name nacos-web-config-auth -f compose.yaml -f compose.auth.yaml up -d
+services:
+  nacos2:
+    environment:
+      NACOS_AUTH_ENABLE: 'true'
+    volumes:
+      - nacos2-auth-data:/home/nacos/data
+      - nacos2-auth-logs:/home/nacos/logs
+  nacos3:
+    environment:
+      NACOS_AUTH_ENABLE: 'true'
+      NACOS_AUTH_ADMIN_ENABLE: 'true'
+      NACOS_AUTH_CONSOLE_ENABLE: 'true'
+    volumes:
+      - nacos3-auth-data:/home/nacos/data
+      - nacos3-auth-logs:/home/nacos/logs
+volumes:
+  nacos2-auth-data:
+  nacos2-auth-logs:
+  nacos3-auth-data:
+  nacos3-auth-logs:

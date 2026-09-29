@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nacos Web Config Demo</title>
+  </head>
+  <body>
+    <main>
+      <h1 id="banner">Nacos Web Config Demo</h1>
+      <p id="status">正在连接配置流…</p>
+    </main>
+    <script type="module">
+      const banner = document.querySelector("#banner");
+      const status = document.querySelector("#status");
+      const fallback = "Nacos Web Config Demo";
+      const stream = new EventSource("/_web-config/v1/stream?key=ui");
+
+      function decode(value) {
+        const bannerValue = value?.banner;
+        const interval = value?.refreshIntervalMs;
+        if (typeof bannerValue !== "object" || bannerValue === null || Array.isArray(bannerValue)
+            || typeof bannerValue.enabled !== "boolean"
+            || typeof bannerValue.text !== "string"
+            || !Number.isInteger(interval) || interval < 1000 || interval > 86400000) {
+          return null;
+        }
+        return { banner: bannerValue, refreshIntervalMs: interval };
+      }
+
+      function apply(event) {
+        const envelope = JSON.parse(event.data);
+        const item = envelope.entries?.ui ?? envelope.entry;
+        if (item?.status === "deleted") {
+          banner.textContent = fallback;
+          status.textContent = "远端配置已删除，正在使用本地默认值";
+          return;
+        }
+        const config = decode(item?.value);
+        if (config === null) {
+          status.textContent = "远端配置无效，保留最近一次有效显示";
+          return;
+        }
+        banner.textContent = config.banner.enabled ? config.banner.text : fallback;
+        status.textContent = `配置状态：${item?.status ?? "unknown"}`;
+      }
+
+      stream.addEventListener("snapshot", apply);
+      stream.addEventListener("change", apply);
+      stream.onerror = () => { status.textContent = "连接暂时中断，浏览器会自动重连"; };
+    </script>
+  </body>
+</html>

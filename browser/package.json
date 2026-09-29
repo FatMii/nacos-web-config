@@ -1,0 +1,19 @@
+{
+  "name": "nacos-web-config-browser-workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @fatmii/nacos-web-config",
+    "test": "npm test --workspace @fatmii/nacos-web-config",
+    "test:e2e": "node --test e2e/live-nacos.test.mjs",
+    "test:e2e:browser": "node --test e2e/live-nacos.test.mjs",
+    "test:e2e:restart": "node --test --test-reporter=spec e2e/live-nacos.test.mjs",
+    "test:e2e:proxy": "node --test --test-reporter=spec e2e/live-nacos.test.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.55.0"
+  }
+}

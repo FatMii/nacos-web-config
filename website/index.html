@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="icon" type="image/x-icon" href="./favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+<link rel="manifest" href="./site.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<title>Nacos Web Config — 让网页安全地拿到 Nacos 里指定的 JSON 配置</title>
+<meta name="description" content="让网页安全地拿到 Nacos 里指定的 JSON 配置，配置一改，页面跟着更新。Spring Boot Starter + 前端 SDK，同源 SSE 推送。">
+<link rel="canonical" href="https://fatmii.github.io/nacos-web-config/">
+<link rel="alternate" hreflang="zh-CN" href="https://fatmii.github.io/nacos-web-config/">
+<link rel="alternate" hreflang="en" href="https://fatmii.github.io/nacos-web-config/en/">
+<link rel="alternate" hreflang="x-default" href="https://fatmii.github.io/nacos-web-config/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="Nacos Web Config">
+<meta property="og:description" content="让网页安全地拿到 Nacos 里指定的 JSON 配置，配置一改，页面跟着更新。">
+<link rel="stylesheet" href="./index.css?v=20260929k">
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="brand" href="./">
+    <span class="brand-mark">W</span>
+    <span class="brand-name">Nacos Web Config</span>
+  </a>
+  <div class="nav-actions">
+    <div class="nav-links">
+      <a href="#why">为什么</a>
+      <a href="#quickstart">快速开始</a>
+      <a href="https://github.com/FatMii/nacos-web-config" target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+    <div class="nav-util">
+      <a class="lang-switch" href="./en/" lang="en" hreflang="en">EN</a>
+      <button class="theme-toggle" type="button" id="theme-toggle" data-label-dark="夜间" data-label-light="浅色">夜间</button>
+    </div>
+    <a class="install-mini" href="#quickstart">开始接入</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============ HERO ============ -->
+<section class="hero-focus" aria-labelledby="hero-title">
+  <h1 id="hero-title">让网页安全地拿到 Nacos 里指定的 JSON 配置</h1>
+  <ul class="hero-what" aria-label="它是什么">
+    <li>装进现有 Spring Boot 应用的 <strong>starter</strong>（不用再起一个服务）</li>
+    <li>一个很小的<strong>前端 SDK</strong>（TypeScript ESM，没有运行时依赖）</li>
+    <li>一条<strong>只读</strong>通道：网页只能拿到你事先允许的那些 JSON 配置</li>
+  </ul>
+  <div class="actions">
+    <a class="button primary" href="#demo">查看演示</a>
+    <a class="button" href="https://github.com/FatMii/nacos-web-config" target="_blank" rel="noreferrer">GitHub</a>
+  </div>
+  <ul class="proof" aria-label="产品要点">
+    <li><strong>Apache-2.0</strong> 开源</li>
+    <li><strong>白名单</strong> 只读</li>
+    <li><strong>Java 17+</strong> · Spring Boot 3</li>
+    <li><strong>v0.1.0</strong> 已发布</li>
+  </ul>
+</section>
+
+<!-- ============ DEMO ============ -->
+<section class="hero-demo" id="demo" aria-label="产品演示">
+  <div class="hero-demo-wrap">
+    <div class="browser-frame">
+      <div class="window-chrome">
+        <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="window-url">Nacos 控制台 → 你的后端 /_web-config/v1/stream → 用户页面</div>
+        <div class="window-badge">SSE</div>
+      </div>
+      <div class="demo-stage">
+        <div class="demo-pane demo-nacos">
+          <div class="pane-head"><span class="pane-title">Nacos 控制台</span><span class="pane-meta">WEB_DEMO / web-demo.public.json</span></div>
+          <pre class="demo-json" id="demo-json"></pre>
+        </div>
+        <div class="demo-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Starter 监听<br>同源推送</span>
+        </div>
+        <div class="demo-pane demo-page">
+          <div class="pane-head"><span class="pane-title">用户页面</span><span class="pane-meta">config.subscribe('ui', …)</span></div>
+          <div class="mock-page">
+            <div class="mock-nav"><span class="mock-logo"></span><span class="mock-pill"></span><span class="mock-pill"></span></div>
+            <div class="mock-banner" id="demo-banner">页面公告位 · 等待推送…</div>
+            <div class="mock-block wide"></div>
+            <div class="mock-block"></div><div class="mock-block"></div><div class="mock-block"></div>
+          </div>
+        </div>
+      </div>
+      <div class="demo-stream" aria-label="SSE 事件日志（模拟）">
+        <span class="stream-label">SSE 事件</span>
+        <ul id="demo-events" class="stream-log"></ul>
+      </div>
+    </div>
+    <p class="demo-caption">模拟演示：左侧为 Nacos 中的 JSON 配置，右侧为浏览器页面收到推送后的效果。</p>
+  </div>
+</section>
+
+<!-- ============ PAIN ============ -->
+<section class="pain-strip" id="why" aria-labelledby="pain-title">
+  <div class="section-head">
+    <h2 id="pain-title">为什么需要它</h2>
+    <div class="pain-lead">
+      <p>页面上的公告、功能开关、活动文案经常存在 Nacos 里。</p>
+      <p>运营一点发布，就希望线上页面跟着变，而不是等下一次前端发版。</p>
+      <p>但网页不该自己去连 Nacos。</p>
+      <p>所以还是让你的 Spring Boot 去连 Nacos，网页只连自己的后端。你在配置里写清楚哪些名字可以给网页看，后端校验后再推过去。</p>
+    </div>
+  </div>
+  <div class="table-wrap compare-wrap">
+    <table>
+      <thead><tr><th>场景</th><th>自己写 / 直连</th><th>nacos-web-config</th></tr></thead>
+      <tbody>
+        <tr><td>账号写到哪</td><td>写进前端谁都能看到；拿到账号还能改、删</td><td><strong>凭据只留在后端</strong></td></tr>
+        <tr><td>能放开多少</td><td>Nacos 按命名空间授权，没法只放开一条</td><td><strong>只放出你点名的那些名字</strong></td></tr>
+        <tr><td>对 Nacos 的暴露面</td><td>直接对外易被刷挂，依赖它的后端都会受影响</td><td><strong>网页只连你的后端</strong></td></tr>
+        <tr><td>运营推了坏内容</td><td>规则自己定，页面容易直接挂</td><td><strong>丢掉坏数据，继续用上一份好的</strong></td></tr>
+        <tr><td>发布后要尽快出现在页面</td><td>继续轮询，或自己做推送</td><td><strong>后端直接推变更</strong></td></tr>
+        <tr><td>Nacos 临时挂了</td><td>自己约定怎么表现</td><td><strong>不把页面上的值清掉</strong></td></tr>
+        <tr><td>接入成本</td><td>缓存、协议、测试都自己扛</td><td><strong>依赖 + 一段 YAML + <code>subscribe()</code></strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="pain-aside"><strong>什么时候不用：</strong>如果只是一条公告，不追求实时变更——后端开一个普通接口，前端定时请求就够了。</p>
+</section>
+
+<!-- ============ ARCHITECTURE ============ -->
+<section class="arch-section" id="architecture" aria-labelledby="arch-title">
+  <div class="section-head">
+    <h2 id="arch-title">数据怎么走</h2>
+    <p>不另起进程、不另开库、不另做控制台。装进直接对浏览器服务的 Spring Boot 应用即可。</p>
+  </div>
+  <div class="flow" role="img" aria-label="架构图：Nacos 监听至 Spring Boot Starter，经同源 SSE 到 Browser SDK，再到页面">
+    <div class="flow-node">
+      <span class="flow-tag">配置中心</span>
+      <strong>Nacos</strong>
+      <p>运营在此发布、修改 JSON 配置</p>
+    </div>
+    <div class="flow-link"><span>watch</span></div>
+    <div class="flow-node flow-accent">
+      <span class="flow-tag">你的后端</span>
+      <strong>Spring Boot Starter</strong>
+      <p>白名单 · 校验 · 推送</p>
+    </div>
+    <div class="flow-link"><span>HTTP/SSE<br>same-origin</span></div>
+    <div class="flow-node">
+      <span class="flow-tag">前端 SDK</span>
+      <strong>Browser SDK</strong>
+      <p>订阅 · 乱序拒收 · 可选 decode</p>
+    </div>
+    <div class="flow-link"><span>subscribe</span></div>
+    <div class="flow-node">
+      <span class="flow-tag">页面</span>
+      <strong>Page</strong>
+      <p>只拿到声明过的逻辑名</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SPOTLIGHT ============ -->
+<section class="spotlight-group" aria-label="授权写在 YAML">
+  <article class="spotlight reverse">
+    <div class="spotlight-media">
+      <div class="code" data-file="application.yml">
+        <pre><code><span class="p">nacos-web-config</span>:
+  <span class="p">enabled</span>: <span class="k">true</span>          <span class="c"># 默认关闭，须显式启用</span>
+  <span class="p">access</span>: <span class="s">public</span>        <span class="c"># 必填：public | authenticated</span>
+  <span class="p">nacos</span>:
+    <span class="p">server-addr</span>: <span class="s">127.0.0.1:8848</span>
+  <span class="p">exposures</span>:              <span class="c"># 白名单：逻辑名 → 固定 Nacos 坐标</span>
+    <span class="p">ui</span>:
+      <span class="p">group</span>: <span class="s">WEB_DEMO</span>
+      <span class="p">data-id</span>: <span class="s">web-demo.public.json</span>
+      <span class="p">max-bytes</span>: <span class="n">65536</span></code></pre>
+      </div>
+    </div>
+    <div class="spotlight-copy">
+      <ul class="tag-list"><li class="tag">YAML</li><li class="tag">白名单</li></ul>
+      <h3>授权写在 YAML 里</h3>
+      <p>对外暴露哪些配置，由白名单决定：逻辑名映射固定 Nacos 坐标，并带字节上限。登录与鉴权沿用宿主现有安全链，Starter 不自建登录。</p>
+    </div>
+  </article>
+</section>
+
+<!-- ============ QUICKSTART ============ -->
+<section class="quickstart" id="quickstart" aria-labelledby="qs-title">
+  <div class="section-head">
+    <h2 id="qs-title">快速开始</h2>
+    <p>后端加依赖并声明白名单，前端订阅。完整配置项见 GitHub README「配置参考」。</p>
+  </div>
+  <ol class="qs-steps">
+    <li class="qs-step">
+      <div class="qs-step-head"><span class="step-num">Step 1</span><h3>后端引入 Starter 并声明白名单</h3></div>
+      <div class="qs-codes">
+        <div class="code" data-file="pom.xml">
+<pre><code><span class="t">&lt;dependency&gt;</span>
+  <span class="t">&lt;groupId&gt;</span>io.github.fatmii.nacoswebconfig<span class="t">&lt;/groupId&gt;</span>
+  <span class="t">&lt;artifactId&gt;</span>nacos-web-config-spring-boot-starter<span class="t">&lt;/artifactId&gt;</span>
+  <span class="t">&lt;version&gt;</span>0.1.0<span class="t">&lt;/version&gt;</span>
+<span class="t">&lt;/dependency&gt;</span></code></pre>
+        </div>
+        <div class="code" data-file="application.yml">
+<pre><code><span class="p">nacos-web-config</span>:
+  <span class="p">enabled</span>: <span class="k">true</span>
+  <span class="p">access</span>: <span class="s">public</span>
+  <span class="p">nacos</span>:
+    <span class="p">server-addr</span>: <span class="s">127.0.0.1:8848</span>
+  <span class="p">exposures</span>:
+    <span class="p">ui</span>:
+      <span class="p">group</span>: <span class="s">WEB_DEMO</span>
+      <span class="p">data-id</span>: <span class="s">web-demo.public.json</span>
+      <span class="p">max-bytes</span>: <span class="n">65536</span></code></pre>
+        </div>
+      </div>
+      <p class="qs-note">启动后暴露 SSE 端点 <code>/_web-config/v1/stream</code>（可用 <code>path</code> 修改）。<code>access</code> 选 <code>public</code>（能访问端点即可读白名单）或 <code>authenticated</code>（请求上已有登录身份才接流）。</p>
+    </li>
+    <li class="qs-step">
+      <div class="qs-step-head"><span class="step-num">Step 2</span><h3>前端订阅配置</h3></div>
+      <div class="code" data-file="terminal + TypeScript">
+<pre><code><span class="d">$</span> npm install @fatmii/nacos-web-config</code></pre>
+<pre><code><span class="k">import</span> { createWebConfig } <span class="k">from</span> <span class="s">'@fatmii/nacos-web-config'</span>
+
+<span class="c">// endpoint 可省略（默认 /_web-config/v1/stream）；decode 可省略</span>
+<span class="k">const</span> config = createWebConfig({
+  definitions: {
+    ui: { fallback: { announcement: <span class="s">''</span> } },
+  },
+})
+
+<span class="k">const</span> unsubscribe = config.subscribe(<span class="s">'ui'</span>, state =&gt; {
+  renderAnnouncement(state.value?.announcement ?? <span class="s">''</span>)
+})
+<span class="c">// config.get('ui') 只读当前状态；首次 subscribe() 才建立共享连接</span></code></pre>
+      </div>
+    </li>
+    <li class="qs-step">
+      <div class="qs-step-head"><span class="step-num">Step 3</span><h3>本地演示</h3></div>
+      <div class="code" data-file="PowerShell">
+<pre><code><span class="c"># 需要 JDK 17、Maven，以及能跑 linux/amd64 的 Docker</span>
+<span class="d">$</span> cd dev-environment
+<span class="d">$</span> docker compose --project-name nacos-web-config-local up -d nacos2
+<span class="c"># 等 http://127.0.0.1:18848/nacos 可打开</span>
+
+<span class="d">$</span> cd ..\java
+<span class="d">$</span> $env:NACOS_SERVER_ADDR='127.0.0.1:18848'
+<span class="d">$</span> mvn -pl examples/spring-mvc -am spring-boot:run</code></pre>
+      </div>
+      <p class="qs-note">打开 <code>http://127.0.0.1:8080/</code>，在 Nacos 的 <code>WEB_DEMO</code> 组发布 <code>web-demo.public.json</code>（例如 <code>{"announcement":"hello"}</code>）。页面应在数秒内更新。更细说明见仓库 <code>java/examples/spring-mvc/</code> 与 <code>dev-environment/</code>。</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============ COMPAT ============ -->
+<section class="compat" id="compat" aria-labelledby="compat-title">
+  <div class="section-head">
+    <h2 id="compat-title">兼容性</h2>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>依赖</th><th>版本</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>Java</td><td><code>17+</code></td><td>Spring Boot 3.x，Servlet/MVC</td></tr>
+        <tr><td>Nacos Client</td><td><code>2.5.3</code></td><td>唯一支持的客户端线</td></tr>
+        <tr><td>Nacos Server</td><td><code>2.5.3</code></td><td>含浏览器完整链路实测（Java 测试 + browser E2E）</td></tr>
+        <tr><td>Nacos Server</td><td><code>3.2.3</code></td><td>仅 Java Adapter 集成测试，不宣称完整浏览器链路</td></tr>
+        <tr><td>浏览器</td><td>现代浏览器</td><td>需 <code>fetch</code> + <code>ReadableStream</code>，无 EventSource 回退</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="faq-section" id="faq" aria-labelledby="faq-title">
+  <div class="faq-head">
+    <h2 id="faq-title">常见问题</h2>
+  </div>
+  <div class="faq-list">
+    <details class="faq-item">
+      <summary>Nacos 会不会暴露给前端？</summary>
+      <div class="faq-answer"><p>不会。浏览器只与你的后端同源自带的 SSE 端点通信，且只能访问 YAML 白名单中显式声明的逻辑名；Nacos 地址、鉴权凭据、group / dataId / namespace 都不经过浏览器。</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>为什么不让浏览器直连 Nacos？</summary>
+      <div class="faq-answer"><p>账号写进前端谁都能看到，而且 Nacos 账号还能改配置。Nacos 也不能只放开「这一条」给网页看。直接对外还容易把配置中心打挂。所以应由你的后端去连 Nacos；网页只连你的后端，并且只能拿到你事先允许的那些配置。</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>为什么用 SSE，不用轮询或 WebSocket？</summary>
+      <div class="faq-answer"><p>这是单向配置推送。SSE 走普通 HTTP：同源、复用现有鉴权与网关、浏览器成本低。协议自带单调序号与流 ID，快照先于增量，乱序拒收，重连再取快照。轮询给不了这些语义；WebSocket 则要自己实现。</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>后端随便开个接口给前端轮询，不就行了？</summary>
+      <div class="faq-answer"><p>如果只是一条公告、不追求实时变更，后端开个普通接口、前端定时请求就够。需要只放出指定配置、坏数据不弄挂页面、发布后直接推到页面时，再考虑用本项目。</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>鉴权怎么做？</summary>
+      <div class="faq-answer"><p><code>access</code> 只有 <code>public</code> 与 <code>authenticated</code>，必须显式声明，否则启动失败。<code>public</code>：能访问端点即可读白名单（只读）。<code>authenticated</code>：请求上已有登录身份才接流；Starter 只看 <code>getUserPrincipal()</code>，不关心身份怎么挂上，也不自己登录。没有登录机制时一律 401。级别按整条流，不能逐键设。</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>运营推了坏配置会怎样？</summary>
+      <div class="faq-answer"><p>内容有硬校验：必须是 JSON 对象且不超过 <code>max-bytes</code>，不合格的内容被拒绝且不会覆盖最近有效值。Nacos 整体不可达时也只是标记 stale，页面继续用最后一次有效配置渲染。</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>有哪些限制？</summary>
+      <div class="faq-answer"><ul>
+        <li>Nacos 3.2.3 仅 Adapter 级兼容。</li>
+        <li>仅 Servlet MVC；无 WebFlux 变体。</li>
+        <li>值必须是 <code>max-bytes</code> 以内的 JSON 对象。</li>
+        <li>SDK 仅 ESM；老浏览器需自备构建/兼容方案。</li>
+        <li>无管理界面；创建与编辑仍在 Nacos 控制台。</li>
+      </ul></div>
+    </details>
+    <details class="faq-item">
+      <summary>有没有全部配置项的清单？</summary>
+      <div class="faq-answer"><p>有。README 的「配置参考」给了一份带默认值的完整 YAML，每项旁边用注释说明作用。原则只有一条：填错就启动失败并给精确报错，不会悄悄用默认值跑起来。</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>要暴露多条配置，就要开多条连接吗？</summary>
+      <div class="faq-answer"><p>不用。一个后端实例的整张白名单共用<strong>一条</strong>连接：浏览器订阅时把所有键拼在同一个请求上（单连接默认上限 32 键），首个快照一次带回全部键，之后哪条变了就单独推哪条。一个实例只连一个 namespace；要跨 namespace 就再加一个实例。</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>新增一条要暴露的配置，要重新打包部署吗？</summary>
+      <div class="faq-answer"><p>不用改业务代码：在 <code>application.yml</code> 里加一条允许对外的配置，重启即可。前端再在 <code>definitions</code> 里补同名项。经常改的字段可以放在同一个 JSON 里，运营改内容就能立刻生效，不必老是加新的对外项。</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>前端必须用某个框架吗？</summary>
+      <div class="faq-answer"><p>不绑定框架。SDK 是 TypeScript 库，<code>subscribe</code> / <code>get</code> 纯订阅模型，React、Vue 或原生页面均可直接使用；需要支持 <code>fetch</code> + <code>ReadableStream</code> 的现代浏览器。</p></div>
+    </details>
+  </div>
+  <p class="faq-foot">更多说明见 <a href="https://github.com/FatMii/nacos-web-config/blob/main/README.zh-CN.md" target="_blank" rel="noreferrer">GitHub README</a></p>
+</section>
+
+<!-- ============ GET ============ -->
+<section class="install-section" id="install">
+  <div class="install-head">
+    <h2>获取</h2>
+    <p>0.1.0 已在 Maven Central 与 npm。加依赖或 <code>npm install</code> 即可。</p>
+  </div>
+  <div class="install-paths">
+    <article class="install-path recommended">
+      <h3>Maven Central <span class="path-badge">已发布</span></h3>
+      <p><code>io.github.fatmii.nacoswebconfig:nacos-web-config-spring-boot-starter:0.1.0</code>；连同父 POM、核心与适配器共 7 个构件，每个都带 GPG 签名。</p>
+      <a class="button primary" href="https://central.sonatype.com/artifact/io.github.fatmii.nacoswebconfig/nacos-web-config-spring-boot-starter" target="_blank" rel="noreferrer">查看构件</a>
+    </article>
+    <article class="install-path">
+      <h3>npm <span class="path-badge">已发布</span></h3>
+      <p><code>npm install @fatmii/nacos-web-config</code>，0.1.0，TypeScript ESM、零运行时依赖。</p>
+      <a class="button primary" href="https://www.npmjs.com/package/@fatmii/nacos-web-config" target="_blank" rel="noreferrer">查看包页</a>
+    </article>
+    <article class="install-path">
+      <h3>源码构建</h3>
+      <p>准备 JDK 17+、Maven、Node.js。后端在 <code>java/</code> 执行 <code>mvn verify</code>；前端在 <code>browser/</code> 执行 <code>npm ci && npm test && npm run build</code>。</p>
+      <a class="button" href="https://github.com/FatMii/nacos-web-config/blob/main/CONTRIBUTING.md" target="_blank" rel="noreferrer">查看构建方法</a>
+    </article>
+  </div>
+  <p class="install-foot">也可从 <a href="https://github.com/FatMii/nacos-web-config" target="_blank" rel="noreferrer">GitHub 源码</a> 自行构建。安全漏洞请勿开公开 Issue，报告方式见 <a href="https://github.com/FatMii/nacos-web-config/blob/main/SECURITY.md" target="_blank" rel="noreferrer">SECURITY.md</a>。</p>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <p>
+    Nacos Web Config · Apache-2.0 ·
+    <a href="https://github.com/FatMii/nacos-web-config/blob/main/README.md" target="_blank" rel="noreferrer">README</a> ·
+    <a href="https://github.com/FatMii/nacos-web-config" target="_blank" rel="noreferrer">GitHub</a> ·
+    v0.1.0 已发布
+  </p>
+</footer>
+
+<script src="./index.js"></script>
+</body>
+</html>

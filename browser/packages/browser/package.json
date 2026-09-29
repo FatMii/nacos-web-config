@@ -1,0 +1,34 @@
+{
+  "name": "@fatmii/nacos-web-config",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "private": true,
+  "description": "Browser SDK for receiving whitelisted Nacos JSON configs in real time over same-origin SSE from your existing Spring Boot backend.",
+  "keywords": ["nacos", "config", "sse", "spring-boot", "feature-flags", "announcement"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FatMii/nacos-web-config.git",
+    "directory": "browser/packages/browser"
+  },
+  "homepage": "https://github.com/FatMii/nacos-web-config#readme",
+  "bugs": { "url": "https://github.com/FatMii/nacos-web-config/issues" },
+  "publishConfig": { "access": "public" },
+  "engines": { "node": ">=18" },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE", "NOTICE"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --experimental-strip-types --test"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

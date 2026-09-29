@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.github.fatmii.nacoswebconfig</groupId>
+    <artifactId>nacos-web-config-parent</artifactId>
+    <version>0.1.0</version>
+  </parent>
+  <artifactId>nacos-web-config-server-core</artifactId>
+  <name>Nacos Web Config Server Core</name>
+  <description>Framework-neutral runtime: whitelist registry, JSON validation, last-known-good state, snapshots and subscription hub.</description>
+
+  <properties>
+    <nwc.build.dir>${project.basedir}/target</nwc.build.dir>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <directory>${nwc.build.dir}</directory>
+    <outputDirectory>${nwc.build.dir}/classes</outputDirectory>
+    <testOutputDirectory>${nwc.build.dir}/test-classes</testOutputDirectory>
+  </build>
+</project>

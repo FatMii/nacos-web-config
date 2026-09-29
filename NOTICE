@@ -1,0 +1,41 @@
+Nacos Web Config
+Copyright 2026 FatMii
+
+This product includes software developed at
+https://github.com/FatMii/nacos-web-config
+
+Runtime third-party dependencies and their licenses
+(resolved from the Maven dependency tree, 2026-09-21; re-checked in CI by
+the CycloneDX SBOM and the Trivy license scan in .github/workflows/verify.yml):
+
+Apache License 2.0:
+- Alibaba Nacos client and companion modules
+  (nacos-client, nacos-auth-plugin, nacos-encryption-plugin,
+  nacos-logback-adapter-12, nacos-log4j2-adapter, logback-adapter)
+- Spring Boot and Spring Framework
+- Embedded Apache Tomcat (tomcat-embed-core, tomcat-embed-el,
+  tomcat-embed-websocket)
+- Jackson (jackson-core, jackson-databind, jackson-annotations,
+  jackson-datatype-jdk8, jackson-datatype-jsr310,
+  jackson-module-parameter-names)
+- Apache HttpComponents (httpclient, httpcore, httpcore-nio,
+  httpasyncclient)
+- Apache commons-codec
+- Micrometer (micrometer-core, micrometer-commons, micrometer-observation)
+- Prometheus simpleclient and its OTel tracer modules
+
+MIT License:
+- SLF4J API
+
+EPL-1.0 / GNU LGPL 2.1 (dual-licensed; EPL-1.0 is elected):
+- Logback (logback-classic, logback-core), pulled in via the Nacos client
+  logging adapters
+
+CC0-1.0 / BSD-2-Clause:
+- HdrHistogram
+- LatencyUtils
+
+Test and build tooling, not redistributed:
+- JUnit Jupiter (EPL 2.0), Mockito (MIT), TypeScript (Apache-2.0)
+
+The Browser SDK ships no runtime npm dependencies.

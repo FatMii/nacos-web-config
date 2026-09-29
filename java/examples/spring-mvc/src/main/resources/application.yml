@@ -1,0 +1,13 @@
+nacos-web-config:
+  enabled: true
+  access: public
+  nacos:
+    server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+    namespace: ${NACOS_NAMESPACE:}
+    username: ${NACOS_USERNAME:}
+    password: ${NACOS_PASSWORD:}
+  exposures:
+    ui:
+      group: WEB_DEMO
+      data-id: web-demo.public.json
+      max-bytes: 65536
