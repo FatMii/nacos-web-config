@@ -18,7 +18,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:title" content="Nacos Web Config">
 <meta property="og:description" content="让网页安全地拿到 Nacos 里指定的 JSON 配置，配置一改，页面跟着更新。">
-<link rel="stylesheet" href="./index.css?v=20260930h">
+<link rel="stylesheet" href="./index.css?v=20260930i">
 </head>
 <body>
 
@@ -67,37 +67,10 @@
 <!-- ============ DEMO ============ -->
 <section class="hero-demo" id="demo" aria-label="产品演示">
   <div class="hero-demo-wrap">
-    <div class="browser-frame">
-      <div class="window-chrome">
-        <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-        <div class="window-url">Nacos 控制台 → 你的后端 /_web-config/v1/stream → 用户页面</div>
-        <div class="window-badge">SSE</div>
-      </div>
-      <div class="demo-stage">
-        <div class="demo-pane demo-nacos">
-          <div class="pane-head"><span class="pane-title">Nacos 控制台</span><span class="pane-meta">WEB_DEMO / web-demo.public.json</span></div>
-          <pre class="demo-json" id="demo-json"></pre>
-        </div>
-        <div class="demo-arrow" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Starter 监听<br>同源推送</span>
-        </div>
-        <div class="demo-pane demo-page">
-          <div class="pane-head"><span class="pane-title">用户页面</span><span class="pane-meta">config.subscribe('ui', …)</span></div>
-          <div class="mock-page">
-            <div class="mock-nav"><span class="mock-logo"></span><span class="mock-pill"></span><span class="mock-pill"></span></div>
-            <div class="mock-banner" id="demo-banner">页面公告位 · 等待推送…</div>
-            <div class="mock-block wide"></div>
-            <div class="mock-block"></div><div class="mock-block"></div><div class="mock-block"></div>
-          </div>
-        </div>
-      </div>
-      <div class="demo-stream" aria-label="SSE 事件日志（模拟）">
-        <span class="stream-label">SSE 事件</span>
-        <ul id="demo-events" class="stream-log"></ul>
-      </div>
-    </div>
-    <p class="demo-caption">模拟演示：左侧为 Nacos 中的 JSON 配置，右侧为浏览器页面收到推送后的效果。</p>
+    <figure class="demo-reel">
+      <img src="./media/live-push.gif" alt="真实录屏：在 Nacos 发布配置后，页面无需刷新即更新" width="1440" height="810" loading="lazy">
+      <figcaption>真实录屏：Nacos 控制台一点发布，页面跟着更新（同源 SSE）。</figcaption>
+    </figure>
   </div>
 </section>
 

@@ -18,7 +18,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:title" content="Nacos Web Config">
 <meta property="og:description" content="Let the browser safely receive only the Nacos JSON configs you allow. Change a config, and the page updates.">
-<link rel="stylesheet" href="../index.css?v=20260930h">
+<link rel="stylesheet" href="../index.css?v=20260930i">
 </head>
 <body>
 
@@ -67,37 +67,10 @@
 <!-- ============ DEMO ============ -->
 <section class="hero-demo" id="demo" aria-label="Product demo">
   <div class="hero-demo-wrap">
-    <div class="browser-frame">
-      <div class="window-chrome">
-        <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-        <div class="window-url">Nacos console → your backend /_web-config/v1/stream → user page</div>
-        <div class="window-badge">SSE</div>
-      </div>
-      <div class="demo-stage">
-        <div class="demo-pane demo-nacos">
-          <div class="pane-head"><span class="pane-title">Nacos Console</span><span class="pane-meta">WEB_DEMO / web-demo.public.json</span></div>
-          <pre class="demo-json" id="demo-json"></pre>
-        </div>
-        <div class="demo-arrow" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 12h14m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Starter watches<br>same-origin push</span>
-        </div>
-        <div class="demo-pane demo-page">
-          <div class="pane-head"><span class="pane-title">User Page</span><span class="pane-meta">config.subscribe('ui', …)</span></div>
-          <div class="mock-page">
-            <div class="mock-nav"><span class="mock-logo"></span><span class="mock-pill"></span><span class="mock-pill"></span></div>
-            <div class="mock-banner" id="demo-banner">Announcement slot · waiting for push…</div>
-            <div class="mock-block wide"></div>
-            <div class="mock-block"></div><div class="mock-block"></div><div class="mock-block"></div>
-          </div>
-        </div>
-      </div>
-      <div class="demo-stream" aria-label="SSE event log (simulated)">
-        <span class="stream-label">SSE events</span>
-        <ul id="demo-events" class="stream-log"></ul>
-      </div>
-    </div>
-    <p class="demo-caption">Simulated demo: left is the JSON config in Nacos; right is the browser page after each push.</p>
+    <figure class="demo-reel">
+      <img src="../media/live-push.gif" alt="Live recording: after publishing in Nacos, the page updates without a reload" width="1440" height="810" loading="lazy">
+      <figcaption>Live recording: publish in the Nacos console, and the page updates over same-origin SSE.</figcaption>
+    </figure>
   </div>
 </section>
 
