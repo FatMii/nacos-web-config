@@ -3,7 +3,7 @@ name: Deploy website
 on:
   push:
     branches: [main]
-    paths: ['website/**', 'media/**']
+    paths: ['website/**']
   workflow_dispatch:
 
 permissions:
@@ -25,10 +25,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Stage media into website
-        run: |
-          mkdir -p website/media
-          cp -a media/. website/media/
       - uses: actions/configure-pages@v5
         with:
           enablement: true

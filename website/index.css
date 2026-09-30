@@ -333,15 +333,22 @@ code {
 
 /* ---------- architecture ---------- */
 .arch-section { padding: 0 clamp(16px, 5vw, 72px) clamp(48px, 8vh, 88px) }
-.arch-figure {
+.arch-embed {
   max-width: 1080px; margin: 0 auto;
   border: 1px solid var(--line); border-radius: 16px;
   background: var(--surface); box-shadow: 0 16px 40px var(--shadow);
   overflow: hidden;
 }
-.arch-figure img {
-  display: block; width: 100%; height: auto;
+.arch-frame {
+  display: block; width: 100%;
+  height: clamp(420px, 58vh, 640px);
+  border: 0; background: transparent;
 }
+.arch-open {
+  max-width: 1080px; margin: 12px auto 0;
+  text-align: right; font-size: 13px;
+}
+.arch-open a { color: var(--blue) }
 
 .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none }
 .tag { padding: 4px 8px; color: var(--blue); background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 999px; font: 600 10px var(--font-mono) }
@@ -460,6 +467,7 @@ td:first-child { color: var(--text); font-weight: 600; white-space: nowrap }
 @media (max-width: 900px) {
   .install-paths, .qs-codes, .qs-links, .spotlight, .spotlight.reverse { grid-template-columns: 1fr }
   .spotlight.reverse .spotlight-media, .spotlight.reverse .spotlight-copy { order: unset }
+  .arch-frame { height: clamp(360px, 70vh, 560px) }
   .demo-stage { grid-template-columns: 1fr }
   .demo-arrow { flex-direction: row; padding: 2px 0 }
   .demo-arrow svg { transform: rotate(90deg) }

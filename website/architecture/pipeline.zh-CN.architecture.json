@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Nacos Web Config 链路架构",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": "nwc-pipeline-architecture.html"
+  },
+  "components": [
+    {
+      "id": "nacos",
+      "type": "cloud",
+      "label": "Nacos",
+      "sublabel": "配置中心",
+      "tag": "内网",
+      "pos": [48, 210],
+      "size": [150, 72]
+    },
+    {
+      "id": "starter",
+      "type": "backend",
+      "label": "Spring Boot Starter",
+      "sublabel": "白名单 · 校验 · LKG",
+      "brand": "spring",
+      "pos": [268, 210],
+      "size": [190, 72]
+    },
+    {
+      "id": "sse",
+      "type": "messagebus",
+      "label": "同源 SSE",
+      "sublabel": "/_web-config/v1/stream",
+      "pos": [528, 210],
+      "size": [170, 72]
+    },
+    {
+      "id": "sdk",
+      "type": "frontend",
+      "label": "浏览器 SDK",
+      "sublabel": "@fatmii/nacos-web-config",
+      "pos": [768, 210],
+      "size": [180, 72]
+    },
+    {
+      "id": "page",
+      "type": "frontend",
+      "label": "页面",
+      "sublabel": "公告 / 开关 / 文案",
+      "pos": [1018, 210],
+      "size": [150, 72]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "后端 · Nacos 凭据不出浏览器",
+      "wraps": ["nacos", "starter", "sse"]
+    },
+    {
+      "kind": "region",
+      "label": "浏览器同源",
+      "wraps": ["sdk", "page"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "nacos-to-starter",
+      "from": "nacos",
+      "to": "starter",
+      "label": "监听",
+      "variant": "emphasis"
+    },
+    {
+      "id": "starter-to-sse",
+      "from": "starter",
+      "to": "sse",
+      "label": "快照 + 变更"
+    },
+    {
+      "id": "sse-to-sdk",
+      "from": "sse",
+      "to": "sdk",
+      "label": "同源 HTTP/SSE",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sdk-to-page",
+      "from": "sdk",
+      "to": "page",
+      "label": "subscribe"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "安全边界",
+      "items": [
+        "Nacos 账号与读取只留在后端",
+        "浏览器只跟同源后端打交道"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "推送链路",
+      "items": [
+        "Starter 白名单校验后再推",
+        "同源 SSE：先快照，再推变更"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "页面侧",
+      "items": [
+        "SDK 订阅、断线重连、序号校验",
+        "运营一发布，页面跟着更新"
+      ]
+    }
+  ]
+}

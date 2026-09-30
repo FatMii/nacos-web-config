@@ -17,6 +17,17 @@
     return theme === "dark" ? light : dark;
   }
 
+  function syncArchFrameTheme(theme) {
+    var frame = document.querySelector(".arch-frame");
+    if (!frame) return;
+    try {
+      var url = new URL(frame.getAttribute("src") || frame.src, window.location.href);
+      url.searchParams.set("embed", "1");
+      url.searchParams.set("theme", theme === "dark" ? "dark" : "light");
+      frame.src = url.pathname + url.search;
+    } catch (_) {}
+  }
+
   document.addEventListener("click", function (event) {
     var target = event.target;
     if (!(target instanceof HTMLElement)) return;
@@ -25,11 +36,13 @@
     root.dataset.theme = next;
     localStorage.setItem(storageKey, next);
     target.textContent = labelForTheme(next);
+    syncArchFrameTheme(next);
   });
 
   window.addEventListener("DOMContentLoaded", function () {
     var toggle = document.getElementById("theme-toggle");
     if (toggle) toggle.textContent = labelForTheme(root.dataset.theme || "light");
+    syncArchFrameTheme(root.dataset.theme || "light");
   });
 })();
 

@@ -18,7 +18,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:title" content="Nacos Web Config">
 <meta property="og:description" content="让网页安全地拿到 Nacos 里指定的 JSON 配置，配置一改，页面跟着更新。">
-<link rel="stylesheet" href="./index.css?v=20260930f">
+<link rel="stylesheet" href="./index.css?v=20260930h">
 </head>
 <body>
 
@@ -157,11 +157,20 @@
 <section class="arch-section" id="architecture" aria-labelledby="arch-title">
   <div class="section-head">
     <h2 id="arch-title">数据怎么走</h2>
-    <p>不另起进程、不另开库、不另做控制台。装进直接对浏览器服务的 Spring Boot 应用即可。</p>
+    <p>不另起进程、不另开库、不另做控制台。装进直接对浏览器服务的 Spring Boot 应用即可。图可点击节点、缩放查看；完整交互页可单独打开。</p>
   </div>
-  <div class="arch-figure">
-    <img src="./media/pipeline.zh-CN.png" alt="架构图：Nacos 监听至 Spring Boot Starter，经同源 SSE 到 Browser SDK，再到页面" width="1238" height="720" loading="lazy">
+  <div class="arch-embed">
+    <iframe
+      class="arch-frame"
+      title="Nacos Web Config 链路架构"
+      src="./architecture/pipeline.zh-CN.html?embed=1&theme=light"
+      loading="lazy"
+      referrerpolicy="no-referrer"
+    ></iframe>
   </div>
+  <p class="arch-open">
+    <a href="./architecture/pipeline.zh-CN.html" target="_blank" rel="noreferrer">打开完整架构图</a>
+  </p>
 </section>
 
 <!-- ============ SPOTLIGHT ============ -->

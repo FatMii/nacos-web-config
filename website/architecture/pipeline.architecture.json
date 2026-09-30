@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Nacos Web Config pipeline",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "output": "pipeline.html"
+  },
+  "components": [
+    {
+      "id": "nacos",
+      "type": "cloud",
+      "label": "Nacos",
+      "sublabel": "Config center",
+      "tag": "private network",
+      "pos": [48, 210],
+      "size": [150, 72]
+    },
+    {
+      "id": "starter",
+      "type": "backend",
+      "label": "Spring Boot Starter",
+      "sublabel": "Whitelist · validate · LKG",
+      "brand": "spring",
+      "pos": [268, 210],
+      "size": [190, 72]
+    },
+    {
+      "id": "sse",
+      "type": "messagebus",
+      "label": "Same-origin SSE",
+      "sublabel": "/_web-config/v1/stream",
+      "pos": [528, 210],
+      "size": [170, 72]
+    },
+    {
+      "id": "sdk",
+      "type": "frontend",
+      "label": "Browser SDK",
+      "sublabel": "@fatmii/nacos-web-config",
+      "pos": [768, 210],
+      "size": [180, 72]
+    },
+    {
+      "id": "page",
+      "type": "frontend",
+      "label": "Page",
+      "sublabel": "Banner / flags / copy",
+      "pos": [1018, 210],
+      "size": [150, 72]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Backend · Nacos credentials never reach the browser",
+      "wraps": ["nacos", "starter", "sse"]
+    },
+    {
+      "kind": "region",
+      "label": "Browser same-origin",
+      "wraps": ["sdk", "page"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "nacos-to-starter",
+      "from": "nacos",
+      "to": "starter",
+      "label": "watch",
+      "variant": "emphasis"
+    },
+    {
+      "id": "starter-to-sse",
+      "from": "starter",
+      "to": "sse",
+      "label": "push"
+    },
+    {
+      "id": "sse-to-sdk",
+      "from": "sse",
+      "to": "sdk",
+      "label": "HTTP/SSE",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sdk-to-page",
+      "from": "sdk",
+      "to": "page",
+      "label": "subscribe"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Security boundary",
+      "items": [
+        "Nacos accounts and reads stay on the backend",
+        "The browser only talks to your same-origin app"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Push path",
+      "items": [
+        "Starter validates the whitelist, then pushes",
+        "Same-origin SSE: snapshot first, then changes"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Page side",
+      "items": [
+        "SDK: subscribe, reconnect, sequence checks",
+        "Ops publishes — the page updates"
+      ]
+    }
+  ]
+}
