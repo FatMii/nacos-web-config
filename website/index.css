@@ -71,7 +71,7 @@
 html { scroll-behavior: smooth }
 body {
   margin: 0;
-  min-width: 400px;
+  min-width: 320px;
   color: var(--text);
   background: radial-gradient(ellipse 70% 40% at 50% -10%, rgba(37, 99, 235, .12), transparent 55%), var(--bg);
   font-family: var(--font-sans);
@@ -93,8 +93,8 @@ code {
 .site-nav {
   position: sticky; top: 0; z-index: 20;
   height: 64px;
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  padding: 0 1vw;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 clamp(12px, 1vw, 16px);
   background: var(--nav-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
@@ -150,16 +150,20 @@ code {
   word-break: normal;
 }
 .hero-what {
-  max-width: 640px; margin: 22px auto 0; padding: 0; list-style: none;
+  max-width: min(640px, 100%); margin: 22px auto 0; padding: 0; list-style: none;
   display: flex; flex-direction: column; gap: 10px;
   text-align: left;
+  box-sizing: border-box;
 }
 .hero-what li {
-  display: flex; align-items: center;
-  min-height: 48px; padding: 12px 16px;
+  /* block, not flex: text + <strong> must wrap as one paragraph */
+  display: block;
+  padding: 12px 16px;
   background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
   color: var(--text-soft); font-size: 14.5px; line-height: 1.55;
   box-shadow: 0 6px 18px var(--shadow);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .hero-what strong { color: var(--text) }
 .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 28px }
@@ -415,10 +419,22 @@ td:first-child { color: var(--text); font-weight: 600; white-space: nowrap }
   .demo-arrow { flex-direction: row; padding: 2px 0 }
   .demo-arrow svg { transform: rotate(90deg) }
   .nav-links { display: none }
+  .hero-what { width: 100% }
 }
 @media (max-width: 640px) {
-  .nav-util { border-left: 0; padding-left: 0 }
+  .site-nav { padding: 0 12px; gap: 8px }
+  .brand-name { font-size: 13px }
+  .nav-util { border-left: 0; border-right: 0; padding-left: 0; padding-right: 0 }
+  .install-mini { display: none }
+  .hero-focus { padding-left: 16px; padding-right: 16px }
+  .hero-focus h1 { max-width: none; font-size: clamp(1.35rem, 6vw, 1.75rem) }
+  .hero-what li { padding: 12px 14px; font-size: 14px }
+  .pain-lead { max-width: none; padding: 0 4px; text-align: left }
   .demo-stream { flex-direction: column }
+  .table-wrap { border-radius: 12px }
+  th, td { padding: 11px 12px; font-size: 13px }
+  .actions { gap: 10px }
+  .button { min-height: 44px; padding: 0 16px; width: 100%; max-width: 280px }
 }
 
 /* ---------- motion ---------- */
