@@ -18,7 +18,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:title" content="Nacos Web Config">
 <meta property="og:description" content="让网页安全地拿到 Nacos 里指定的 JSON 配置，配置一改，页面跟着更新。">
-<link rel="stylesheet" href="./index.css?v=20260930e">
+<link rel="stylesheet" href="./index.css?v=20260930f">
 </head>
 <body>
 
@@ -159,30 +159,8 @@
     <h2 id="arch-title">数据怎么走</h2>
     <p>不另起进程、不另开库、不另做控制台。装进直接对浏览器服务的 Spring Boot 应用即可。</p>
   </div>
-  <div class="flow" role="img" aria-label="架构图：Nacos 监听至 Spring Boot Starter，经同源 SSE 到 Browser SDK，再到页面">
-    <div class="flow-node">
-      <span class="flow-tag">配置中心</span>
-      <strong>Nacos</strong>
-      <p>运营在此发布、修改 JSON 配置</p>
-    </div>
-    <div class="flow-link"><span>watch</span></div>
-    <div class="flow-node flow-accent">
-      <span class="flow-tag">你的后端</span>
-      <strong>Spring Boot Starter</strong>
-      <p>白名单 · 校验 · 推送</p>
-    </div>
-    <div class="flow-link"><span>HTTP/SSE<br>same-origin</span></div>
-    <div class="flow-node">
-      <span class="flow-tag">前端 SDK</span>
-      <strong>Browser SDK</strong>
-      <p>订阅 · 乱序拒收 · 可选 decode</p>
-    </div>
-    <div class="flow-link"><span>subscribe</span></div>
-    <div class="flow-node">
-      <span class="flow-tag">页面</span>
-      <strong>Page</strong>
-      <p>只拿到声明过的逻辑名</p>
-    </div>
+  <div class="arch-figure">
+    <img src="./media/pipeline.zh-CN.png" alt="架构图：Nacos 监听至 Spring Boot Starter，经同源 SSE 到 Browser SDK，再到页面" width="1238" height="720" loading="lazy">
   </div>
 </section>
 

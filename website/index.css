@@ -333,25 +333,15 @@ code {
 
 /* ---------- architecture ---------- */
 .arch-section { padding: 0 clamp(16px, 5vw, 72px) clamp(48px, 8vh, 88px) }
-.flow {
-  display: flex; align-items: stretch; gap: 8px;
+.arch-figure {
   max-width: 1080px; margin: 0 auto;
+  border: 1px solid var(--line); border-radius: 16px;
+  background: var(--surface); box-shadow: 0 16px 40px var(--shadow);
+  overflow: hidden;
 }
-.flow-node {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 18px 16px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
-  box-shadow: 0 10px 28px var(--shadow); text-align: left;
+.arch-figure img {
+  display: block; width: 100%; height: auto;
 }
-.flow-node.flow-accent { border-color: var(--accent-border); box-shadow: 0 14px 36px #2563eb1f }
-.flow-tag { color: var(--blue); font: 600 10px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase }
-.flow-node strong { font-size: 15px; letter-spacing: -.02em }
-.flow-node p { margin: 0; color: var(--text-soft); font-size: 12.5px; line-height: 1.6 }
-.flow-link { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; color: var(--accent) }
-.flow-link::before { content: ""; width: 100%; border-top: 2px solid var(--line-strong) }
-.flow-link::after { content: "▸"; margin-top: -14px; font-size: 14px; line-height: 1 }
-.flow-link span { color: var(--text-faint); font: 10px/1.4 var(--font-mono); text-align: center }
 
 .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none }
 .tag { padding: 4px 8px; color: var(--blue); background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 999px; font: 600 10px var(--font-mono) }
@@ -470,10 +460,6 @@ td:first-child { color: var(--text); font-weight: 600; white-space: nowrap }
 @media (max-width: 900px) {
   .install-paths, .qs-codes, .qs-links, .spotlight, .spotlight.reverse { grid-template-columns: 1fr }
   .spotlight.reverse .spotlight-media, .spotlight.reverse .spotlight-copy { order: unset }
-  .flow { flex-direction: column }
-  .flow-link { min-height: 44px }
-  .flow-link::before { width: 0; height: 100%; border-top: 0; border-left: 2px solid var(--line-strong) }
-  .flow-link::after { content: "▾"; margin: -8px 0 }
   .demo-stage { grid-template-columns: 1fr }
   .demo-arrow { flex-direction: row; padding: 2px 0 }
   .demo-arrow svg { transform: rotate(90deg) }

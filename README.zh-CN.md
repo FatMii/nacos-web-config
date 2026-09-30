@@ -24,11 +24,9 @@
 
 > **0.1.0** 已在 Maven Central 与 npm 发布。下面的快速开始从公共仓库安装。
 
-```text
-+-------+   watch    +---------------------+   HTTP/SSE  +-------------+            +------+
-| Nacos | ---------> | Spring Boot Starter | ----------> | Browser SDK | -------->  | Page |
-+-------+            +---------------------+ same-origin +-------------+            +------+
-```
+<p align="center">
+  <img src="./media/pipeline.zh-CN.png" alt="链路：Nacos 监听 → Spring Boot Starter → 同源 SSE → 浏览器 SDK → 页面" width="100%">
+</p>
 
 ---
 

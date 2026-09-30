@@ -24,11 +24,9 @@
 
 > **0.1.0** is on Maven Central and npm. The quick start below installs from those registries.
 
-```text
-+-------+   watch    +---------------------+   HTTP/SSE  +-------------+            +------+
-| Nacos | ---------> | Spring Boot Starter | ----------> | Browser SDK | -------->  | Page |
-+-------+            +---------------------+ same-origin +-------------+            +------+
-```
+<p align="center">
+  <img src="./media/pipeline.png" alt="Pipeline: Nacos watch → Spring Boot Starter → same-origin SSE → Browser SDK → Page" width="100%">
+</p>
 
 ---
 
