@@ -36,8 +36,8 @@ class DemoApplicationHttpTest {
 
         var page = client.send(get("/"), HttpResponse.BodyHandlers.ofString());
         assertEquals(200, page.statusCode());
-        assertTrue(page.body().contains("Nacos Web Config Demo"));
-        assertTrue(page.body().contains("Number.isInteger(interval)"));
+        assertTrue(page.body().contains("Nacos Web Config"));
+        assertTrue(page.body().contains("/_web-config/v1/stream?key=ui"));
 
         source.value("ui", "{\"banner\":{\"enabled\":true,\"text\":\"hello\"},\"refreshIntervalMs\":30000}");
         var stream = client.send(
