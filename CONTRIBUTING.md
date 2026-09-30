@@ -46,5 +46,5 @@ CI runs the same checks on every push (`.github/workflows/verify.yml`), includin
 
 ## Releases
 
-Maintainer-only. Version policy is in `CHANGELOG.md`.
+Maintainer-only. Version policy is in `CHANGELOG.md` / `CHANGELOG.zh-CN.md`.
 Do not publish, tag, or change repo visibility without the owner’s explicit go-ahead.

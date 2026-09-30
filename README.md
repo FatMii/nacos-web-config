@@ -42,6 +42,7 @@
 - [Configuration reference](#configuration-reference)
 - [Compatibility](#compatibility)
 - [Limitations](#limitations)
+- [Changelog](./CHANGELOG.md)
 - [Security](#security)
 - [License](#license)
 
@@ -109,7 +110,7 @@ If Nacos is temporarily unreachable, values on the page are not cleared. They ar
 
 - JDK 17+, Maven, Node.js (CI pins Temurin 17 / Node 22)
 - A Spring Boot 3.x **servlet/MVC** application
-- Nacos Server 2.5.3 (3.2.3 is adapter-tested only; see [Compatibility](#compatibility))
+- Nacos Server 2.5.3 (3.2.3 adapter-tested only; see [Compatibility](#compatibility))
 
 ### 1. Backend: add the starter and declare the whitelist
 
@@ -256,18 +257,18 @@ One logical key maps to one fixed Nacos config. Adding a key means editing `appl
 | Java | 17+ | Spring Boot 3.x, servlet/MVC |
 | Nacos client | 2.5.3 | single supported client line |
 | Nacos server | 2.5.3 | full chain verified (Java tests + browser E2E) |
-| Nacos server | 3.2.3 | Java adapter IT only; no full browser-chain claim |
+| Nacos server | 3.2.3 | Adapter tested; full browser path not claimed yet |
 | Browsers | modern | `fetch` + `ReadableStream`; no EventSource fallback |
 
 ---
 
 # Limitations
 
-- Nacos 3.2.3 support is adapter-level only.
-- Servlet MVC only; no WebFlux variant.
+- Nacos 3.2.3: adapter tests pass; full browser path is not claimed yet (Admin token is awkward to automate there).
+- Servlet MVC only; no WebFlux.
 - Values must be JSON objects under `max-bytes`.
 - ESM-only SDK; older browsers need your own bundler/polyfill.
-- No admin UI; create and edit configs in Nacos.
+- No admin UI; create and edit configs in the Nacos console.
 
 ---
 

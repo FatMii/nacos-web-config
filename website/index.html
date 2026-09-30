@@ -18,7 +18,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:title" content="Nacos Web Config">
 <meta property="og:description" content="让网页安全地拿到 Nacos 里指定的 JSON 配置，配置一改，页面跟着更新。">
-<link rel="stylesheet" href="./index.css?v=20260930a">
+<link rel="stylesheet" href="./index.css?v=20260930e">
 </head>
 <body>
 
@@ -30,6 +30,7 @@
   <div class="nav-actions">
     <div class="nav-links">
       <a href="#why">为什么</a>
+      <a href="#whats-new">更新动态</a>
       <a href="#quickstart">快速开始</a>
       <a href="https://github.com/FatMii/nacos-web-config" target="_blank" rel="noreferrer">GitHub</a>
     </div>
@@ -98,6 +99,30 @@
     </div>
     <p class="demo-caption">模拟演示：左侧为 Nacos 中的 JSON 配置，右侧为浏览器页面收到推送后的效果。</p>
   </div>
+</section>
+
+<!-- ============ WHAT'S NEW ============ -->
+<section class="pulse" id="whats-new" aria-labelledby="pulse-title">
+  <div class="pulse-head">
+    <div class="pulse-live" id="pulse-title">
+      <span class="pulse-dot" aria-hidden="true"></span>
+      <span class="pulse-live-label">活跃维护</span>
+    </div>
+  </div>
+  <article class="pulse-latest">
+    <div class="pulse-latest-meta">
+      <span class="pulse-version">v0.1.0</span>
+      <time datetime="2026-09-28">2026年9月28日</time>
+    </div>
+    <h3>首个公开发布</h3>
+    <p>Spring Boot Starter + 浏览器 SDK 已上 Maven Central / npm。</p>
+    <p>网页只拿白名单里的 JSON；</p>
+    <p>运营在 Nacos 一发布，同源 SSE 推到页面。</p>
+    <div class="pulse-latest-actions">
+      <a class="button primary" href="https://github.com/FatMii/nacos-web-config/blob/main/CHANGELOG.zh-CN.md" target="_blank" rel="noreferrer">查看 Changelog</a>
+      <a class="button" href="https://github.com/FatMii/nacos-web-config/releases" target="_blank" rel="noreferrer">GitHub Releases</a>
+    </div>
+  </article>
 </section>
 
 <!-- ============ PAIN ============ -->
@@ -266,7 +291,7 @@
         <tr><td>Java</td><td><code>17+</code></td><td>Spring Boot 3.x，Servlet/MVC</td></tr>
         <tr><td>Nacos Client</td><td><code>2.5.3</code></td><td>唯一支持的客户端线</td></tr>
         <tr><td>Nacos Server</td><td><code>2.5.3</code></td><td>含浏览器完整链路实测（Java 测试 + browser E2E）</td></tr>
-        <tr><td>Nacos Server</td><td><code>3.2.3</code></td><td>仅 Java Adapter 集成测试，不宣称完整浏览器链路</td></tr>
+        <tr><td>Nacos Server</td><td><code>3.2.3</code></td><td>适配层测过；完整浏览器链路暂不声称支持</td></tr>
         <tr><td>浏览器</td><td>现代浏览器</td><td>需 <code>fetch</code> + <code>ReadableStream</code>，无 EventSource 回退</td></tr>
       </tbody>
     </table>
@@ -306,11 +331,11 @@
     <details class="faq-item">
       <summary>有哪些限制？</summary>
       <div class="faq-answer"><ul>
-        <li>Nacos 3.2.3 仅 Adapter 级兼容。</li>
-        <li>仅 Servlet MVC；无 WebFlux 变体。</li>
-        <li>值必须是 <code>max-bytes</code> 以内的 JSON 对象。</li>
-        <li>SDK 仅 ESM；老浏览器需自备构建/兼容方案。</li>
-        <li>无管理界面；创建与编辑仍在 Nacos 控制台。</li>
+        <li>Nacos 3.2.3：适配层测过了；完整浏览器链路还没在 3.2.3 上声称支持。</li>
+        <li>只有 Servlet MVC，没有 WebFlux。</li>
+        <li>值必须是不超过 <code>max-bytes</code> 的 JSON 对象。</li>
+        <li>SDK 只发 ESM；老浏览器要自己做打包/兼容。</li>
+        <li>没有管理界面；配置仍在 Nacos 控制台改。</li>
       </ul></div>
     </details>
     <details class="faq-item">

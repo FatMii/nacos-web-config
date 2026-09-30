@@ -18,7 +18,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:title" content="Nacos Web Config">
 <meta property="og:description" content="Let the browser safely receive only the Nacos JSON configs you allow. Change a config, and the page updates.">
-<link rel="stylesheet" href="../index.css?v=20260930a">
+<link rel="stylesheet" href="../index.css?v=20260930e">
 </head>
 <body>
 
@@ -30,6 +30,7 @@
   <div class="nav-actions">
     <div class="nav-links">
       <a href="#why">Why</a>
+      <a href="#whats-new">What's new</a>
       <a href="#quickstart">Quick Start</a>
       <a href="https://github.com/FatMii/nacos-web-config" target="_blank" rel="noreferrer">GitHub</a>
     </div>
@@ -98,6 +99,30 @@
     </div>
     <p class="demo-caption">Simulated demo: left is the JSON config in Nacos; right is the browser page after each push.</p>
   </div>
+</section>
+
+<!-- ============ WHAT'S NEW ============ -->
+<section class="pulse" id="whats-new" aria-labelledby="pulse-title">
+  <div class="pulse-head">
+    <div class="pulse-live" id="pulse-title">
+      <span class="pulse-dot" aria-hidden="true"></span>
+      <span class="pulse-live-label">Actively shipping</span>
+    </div>
+  </div>
+  <article class="pulse-latest">
+    <div class="pulse-latest-meta">
+      <span class="pulse-version">v0.1.0</span>
+      <time datetime="2026-09-28">Sep 28, 2026</time>
+    </div>
+    <h3>First public release</h3>
+    <p>Spring Boot starter + browser SDK are on Maven Central and npm.</p>
+    <p>The page only gets whitelisted JSON.</p>
+    <p>When ops publish in Nacos, same-origin SSE pushes to the browser.</p>
+    <div class="pulse-latest-actions">
+      <a class="button primary" href="https://github.com/FatMii/nacos-web-config/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer">Read the Changelog</a>
+      <a class="button" href="https://github.com/FatMii/nacos-web-config/releases" target="_blank" rel="noreferrer">GitHub Releases</a>
+    </div>
+  </article>
 </section>
 
 <!-- ============ PAIN ============ -->
@@ -266,7 +291,7 @@
         <tr><td>Java</td><td><code>17+</code></td><td>Spring Boot 3.x, servlet/MVC</td></tr>
         <tr><td>Nacos client</td><td><code>2.5.3</code></td><td>single supported client line</td></tr>
         <tr><td>Nacos server</td><td><code>2.5.3</code></td><td>full chain verified (Java tests + browser E2E)</td></tr>
-        <tr><td>Nacos server</td><td><code>3.2.3</code></td><td>Java adapter IT only; no full browser-chain claim</td></tr>
+        <tr><td>Nacos server</td><td><code>3.2.3</code></td><td>Adapter tested; full browser path not claimed yet</td></tr>
         <tr><td>Browsers</td><td>modern</td><td><code>fetch</code> + <code>ReadableStream</code>; no EventSource fallback</td></tr>
       </tbody>
     </table>
@@ -306,11 +331,11 @@
     <details class="faq-item">
       <summary>What are the limitations?</summary>
       <div class="faq-answer"><ul>
-        <li>Nacos 3.2.3 support is adapter-level only.</li>
-        <li>Servlet MVC only; no WebFlux variant.</li>
+        <li>Nacos 3.2.3: adapter tested; full browser path not claimed yet.</li>
+        <li>Servlet MVC only; no WebFlux.</li>
         <li>Values must be JSON objects under <code>max-bytes</code>.</li>
         <li>ESM-only SDK; older browsers need your own bundler/polyfill.</li>
-        <li>No admin UI; create and edit configs in Nacos.</li>
+        <li>No admin UI; create and edit configs in the Nacos console.</li>
       </ul></div>
     </details>
     <details class="faq-item">

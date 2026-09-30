@@ -42,6 +42,7 @@
 - [配置参考](#配置参考)
 - [兼容性](#兼容性)
 - [局限](#局限)
+- [Changelog](./CHANGELOG.zh-CN.md)
 - [安全](#安全)
 - [许可证](#许可证)
 
@@ -109,7 +110,7 @@ Nacos 暂时连不上时，不会把页面上的值清掉，只是标成过期�
 
 - JDK 17+、Maven、Node.js（CI 固定 Temurin 17 / Node 22）
 - Spring Boot 3.x **Servlet/MVC** 应用
-- Nacos Server 2.5.3（3.2.3 仅 Adapter 实测，见[兼容性](#兼容性)）
+- Nacos Server 2.5.3（3.2.3 适配层测过，见[兼容性](#兼容性)）
 
 ### 1. 后端：引入 starter 并声明白名单
 
@@ -255,18 +256,18 @@ nacos-web-config:
 | Java | 17+ | Spring Boot 3.x，Servlet/MVC |
 | Nacos Client | 2.5.3 | 唯一支持的客户端线 |
 | Nacos Server | 2.5.3 | 含浏览器完整链路实测（Java 测试 + browser E2E） |
-| Nacos Server | 3.2.3 | 仅 Java Adapter 集成测试，不宣称完整浏览器链路 |
+| Nacos Server | 3.2.3 | 适配层测过；完整浏览器链路暂不声称支持 |
 | 浏览器 | 现代浏览器 | 需 `fetch` + `ReadableStream`，无 EventSource 回退 |
 
 ---
 
 # 局限
 
-- Nacos 3.2.3 仅 Adapter 级兼容。
-- 仅 Servlet MVC；无 WebFlux 变体。
-- 值必须是 `max-bytes` 以内的 JSON 对象。
-- SDK 仅 ESM；老浏览器需自备构建/兼容方案。
-- 无管理界面；创建与编辑仍在 Nacos 控制台。
+- Nacos 3.2.3：适配层测过了；完整浏览器链路还没在 3.2.3 上声称支持（Admin token 不好自动化）。
+- 只有 Servlet MVC，没有 WebFlux。
+- 值必须是不超过 `max-bytes` 的 JSON 对象。
+- SDK 只发 ESM；老浏览器要自己做打包/兼容。
+- 没有管理界面；配置仍在 Nacos 控制台改。
 
 ---
 
