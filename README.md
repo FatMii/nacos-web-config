@@ -24,11 +24,23 @@
 
 > **0.1.0** is on Maven Central and npm. The quick start below installs from those registries.
 
-```text
-+-------+   watch    +---------------------+   HTTP/SSE  +-------------+            +------+
-| Nacos | ---------> | Spring Boot Starter | ----------> | Browser SDK | -------->  | Page |
-+-------+            +---------------------+ same-origin +-------------+            +------+
-```
+<p align="center">
+  <a href="https://fatmii.github.io/nacos-web-config/architecture/pipeline.html">
+    <img src="./website/architecture/pipeline.png" alt="Pipeline: Nacos → Spring Boot Starter → same-origin SSE → Browser SDK → Page" width="100%">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://fatmii.github.io/nacos-web-config/architecture/pipeline.html"><strong>Open the interactive architecture diagram</strong></a>
+  ·
+  <a href="https://fatmii.github.io/nacos-web-config/en/#architecture">Embedded on the site</a>
+</p>
+
+<p align="center">
+  <img src="./website/media/live-push.gif" alt="Live recording: the page updates after a Nacos publish" width="100%">
+</p>
+
+<p align="center"><em>Publish in Nacos — same-origin SSE pushes to the page (live recording)</em></p>
 
 ---
 

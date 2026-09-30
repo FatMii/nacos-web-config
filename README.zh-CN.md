@@ -24,11 +24,23 @@
 
 > **0.1.0** 已在 Maven Central 与 npm 发布。下面的快速开始从公共仓库安装。
 
-```text
-+-------+   watch    +---------------------+   HTTP/SSE  +-------------+            +------+
-| Nacos | ---------> | Spring Boot Starter | ----------> | Browser SDK | -------->  | Page |
-+-------+            +---------------------+ same-origin +-------------+            +------+
-```
+<p align="center">
+  <a href="https://fatmii.github.io/nacos-web-config/architecture/pipeline.zh-CN.html">
+    <img src="./website/architecture/pipeline.zh-CN.png" alt="链路架构：Nacos → Spring Boot Starter → 同源 SSE → Browser SDK → Page" width="100%">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://fatmii.github.io/nacos-web-config/architecture/pipeline.zh-CN.html"><strong>打开交互架构图</strong></a>
+  ·
+  <a href="https://fatmii.github.io/nacos-web-config/#architecture">官网嵌入版</a>
+</p>
+
+<p align="center">
+  <img src="./website/media/live-push.gif" alt="真实录屏：Nacos 发布后页面秒级更新" width="100%">
+</p>
+
+<p align="center"><em>Nacos 一点发布，同源 SSE 推到页面（真实录屏）</em></p>
 
 ---
 
