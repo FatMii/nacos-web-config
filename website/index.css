@@ -216,6 +216,7 @@ code {
   display: block; width: 100%; height: auto;
   vertical-align: top;
 }
+.demo-reel img[data-zoomable] { cursor: zoom-in }
 .demo-reel figcaption {
   margin: 0; padding: 12px 16px 14px;
   color: var(--text-faint); font-size: 13px; line-height: 1.55;
@@ -223,6 +224,8 @@ code {
   border-top: 1px solid var(--line);
   background: var(--surface-2);
 }
+.medium-zoom-overlay,
+.medium-zoom-image--opened { z-index: 100 }
 
 /* ---------- what's new / release pulse ---------- */
 .pulse {

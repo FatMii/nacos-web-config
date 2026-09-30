@@ -18,7 +18,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:title" content="Nacos Web Config">
 <meta property="og:description" content="让网页安全地拿到 Nacos 里指定的 JSON 配置，配置一改，页面跟着更新。">
-<link rel="stylesheet" href="./index.css?v=20260930i">
+<link rel="stylesheet" href="./index.css?v=20260930j">
 </head>
 <body>
 
@@ -68,8 +68,8 @@
 <section class="hero-demo" id="demo" aria-label="产品演示">
   <div class="hero-demo-wrap">
     <figure class="demo-reel">
-      <img src="./media/live-push.gif" alt="真实录屏：在 Nacos 发布配置后，页面无需刷新即更新" width="1440" height="810" loading="lazy">
-      <figcaption>真实录屏：Nacos 控制台一点发布，页面跟着更新（同源 SSE）。</figcaption>
+      <img src="./media/live-push.gif" alt="真实录屏：在 Nacos 发布配置后，页面无需刷新即更新" width="1440" height="810" loading="lazy" data-zoomable>
+      <figcaption>真实录屏：Nacos 控制台一点发布，页面跟着更新（同源 SSE）。点击可放大。</figcaption>
     </figure>
   </div>
 </section>
@@ -356,5 +356,14 @@
 </footer>
 
 <script src="./index.js"></script>
+<script type="module">
+  import mediumZoom from "https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/+esm";
+  const theme = document.documentElement.dataset.theme;
+  mediumZoom("[data-zoomable]", {
+    margin: 24,
+    background: theme === "dark" ? "rgba(11, 18, 32, 0.92)" : "rgba(243, 246, 250, 0.94)",
+    scrollOffset: 40,
+  });
+</script>
 </body>
 </html>

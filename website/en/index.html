@@ -18,7 +18,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:title" content="Nacos Web Config">
 <meta property="og:description" content="Let the browser safely receive only the Nacos JSON configs you allow. Change a config, and the page updates.">
-<link rel="stylesheet" href="../index.css?v=20260930i">
+<link rel="stylesheet" href="../index.css?v=20260930j">
 </head>
 <body>
 
@@ -68,8 +68,8 @@
 <section class="hero-demo" id="demo" aria-label="Product demo">
   <div class="hero-demo-wrap">
     <figure class="demo-reel">
-      <img src="../media/live-push.gif" alt="Live recording: after publishing in Nacos, the page updates without a reload" width="1440" height="810" loading="lazy">
-      <figcaption>Live recording: publish in the Nacos console, and the page updates over same-origin SSE.</figcaption>
+      <img src="../media/live-push.gif" alt="Live recording: after publishing in Nacos, the page updates without a reload" width="1440" height="810" loading="lazy" data-zoomable>
+      <figcaption>Live recording: publish in the Nacos console, and the page updates over same-origin SSE. Click to enlarge.</figcaption>
     </figure>
   </div>
 </section>
@@ -356,5 +356,14 @@
 </footer>
 
 <script src="../index.js"></script>
+<script type="module">
+  import mediumZoom from "https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/+esm";
+  const theme = document.documentElement.dataset.theme;
+  mediumZoom("[data-zoomable]", {
+    margin: 24,
+    background: theme === "dark" ? "rgba(11, 18, 32, 0.92)" : "rgba(243, 246, 250, 0.94)",
+    scrollOffset: 40,
+  });
+</script>
 </body>
 </html>
