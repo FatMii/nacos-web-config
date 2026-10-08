@@ -1,9 +1,9 @@
+# Manual-only escape hatch. Normal deploys run from Verify after CI is green.
+# Prefer fixing Verify; use this only when you intentionally need to republish
+# the current main tree without waiting on a new push.
 name: Deploy website
 
 on:
-  push:
-    branches: [main]
-    paths: ['website/**']
   workflow_dispatch:
 
 permissions:
