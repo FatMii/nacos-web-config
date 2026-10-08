@@ -99,7 +99,6 @@
       </tbody>
     </table>
   </div>
-  <p class="pain-aside"><strong>什么时候不用：</strong>如果只是一条公告，不追求实时变更——后端开一个普通接口，前端定时请求就够了。</p>
 </section>
 
 <!-- ============ ARCHITECTURE ============ -->
@@ -254,7 +253,7 @@
     </details>
     <details class="faq-item">
       <summary>后端随便开个接口给前端轮询，不就行了？</summary>
-      <div class="faq-answer"><p>如果只是一条公告、不追求实时变更，后端开个普通接口、前端定时请求就够。需要只放出指定配置、坏数据不弄挂页面、发布后直接推到页面时，再考虑用本项目。</p></div>
+      <div class="faq-answer"><p>自己写轮询接口，鉴权、白名单映射、坏数据容错、推送与断线恢复都得自己扛。本项目把这些做成可复用能力：只放出你点名的配置、坏数据不弄挂页面、发布后直接推到页面，接入成本是依赖 + YAML + <code>subscribe()</code>。</p></div>
     </details>
     <details class="faq-item">
       <summary>鉴权怎么做？</summary>

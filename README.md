@@ -88,10 +88,6 @@ So let your Spring Boot app talk to Nacos, and let the page talk only to your ap
 | Nacos is briefly down | You invent the behavior | **Values on the page are not cleared** |
 | Integration cost | Cache, protocol, tests | **Dependency + YAML + `subscribe()`** |
 
-### When you do not need this library
-
-If you do not need live updates, a plain GET plus a timer is enough.
-
 ---
 
 # Features

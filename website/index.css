@@ -291,11 +291,6 @@ code {
 }
 .pain-lead p { margin: 0 0 .55em }
 .pain-lead p:last-child { margin-bottom: 0 }
-.pain-aside {
-  max-width: 900px; margin: 16px auto 0; padding: 14px 16px;
-  color: var(--text-soft); font-size: 14px; line-height: 1.75; text-align: left;
-  background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px;
-}
 .compare-wrap { max-width: 900px; margin: 24px auto 0 }
 
 /* ---------- architecture ---------- */
