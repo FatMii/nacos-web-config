@@ -1,0 +1,7 @@
+# CVE-2026-47884 (spring-webmvc XsltView path / RCE).
+# This project does not use XsltView or view-name rendering from "/**" mappings;
+# it only exposes a JSON SSE endpoint. The OSS fix is Spring Framework 7.0.9
+# (Spring Boot 4.0.8+). The 6.2.20 patch is enterprise-only and is not on
+# Maven Central, so Boot 3.5.x cannot clear the finding by a patch bump.
+# Revisit when upgrading to Spring Boot 4.x.
+CVE-2026-47884

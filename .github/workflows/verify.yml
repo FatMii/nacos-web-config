@@ -91,11 +91,11 @@ jobs:
         with:
           trivy-version: v${{ env.TRIVY_VERSION }}
       - name: Scan Java SBOM for vulnerabilities
-        run: trivy sbom --severity HIGH,CRITICAL --exit-code "${SCAN_EXIT_CODE}" java/target/bom.json
+        run: trivy sbom --severity HIGH,CRITICAL --exit-code "${SCAN_EXIT_CODE}" --ignorefile .trivyignore java/target/bom.json
       - name: List Java third-party licenses from SBOM
         run: trivy sbom --scanners license --exit-code 0 java/target/bom.json
       - name: Scan npm lockfile for vulnerabilities
-        run: trivy fs --scanners vuln --severity HIGH,CRITICAL --exit-code "${SCAN_EXIT_CODE}" browser/package-lock.json
+        run: trivy fs --scanners vuln --severity HIGH,CRITICAL --exit-code "${SCAN_EXIT_CODE}" --ignorefile .trivyignore browser/package-lock.json
 
   # Deploy only after Java / Browser / SBOM all succeed. Website-only pushes still
   # pay the full Verify cost so a red CI cannot publish Pages.
