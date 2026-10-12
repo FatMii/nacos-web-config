@@ -114,10 +114,10 @@
       </section>
 
       <div class="grid">
-        <div class="cell"><div class="k">事件序号</div><div class="v" id="fSeq">—</div></div>
-        <div class="cell"><div class="k">内容哈希</div><div class="v" id="fHash">—</div></div>
+        <div class="cell"><div class="k">状态</div><div class="v" id="fStatus">loading</div></div>
+        <div class="cell"><div class="k">值来源</div><div class="v" id="fSource">—</div></div>
+        <div class="cell"><div class="k">错误码</div><div class="v" id="fError">—</div></div>
         <div class="cell"><div class="k">最后更新</div><div class="v" id="fTime">—</div></div>
-        <div class="cell"><div class="k">流 ID</div><div class="v" id="fStream">—</div></div>
         <div class="cell"><div class="k">端点</div><div class="v">/_web-config/v1/stream</div></div>
       </div>
 
@@ -165,26 +165,31 @@ config.subscribe('ui', state => {
       </footer>
     </div>
 
+    <!-- web-config-sdk.js is the build of @fatmii/nacos-web-config from browser/, copied verbatim;
+         the verify workflow fails when the two stop matching. -->
     <script type="module">
+      import { createWebConfig } from "./web-config-sdk.js";
+
       const banner = document.querySelector("#banner");
       const status = document.querySelector("#status");
       const pill = document.querySelector("#statusPill");
       const log = document.querySelector("#log");
       const fields = {
-        seq: document.querySelector("#fSeq"),
-        hash: document.querySelector("#fHash"),
+        status: document.querySelector("#fStatus"),
+        source: document.querySelector("#fSource"),
+        error: document.querySelector("#fError"),
         time: document.querySelector("#fTime"),
-        stream: document.querySelector("#fStream"),
       };
-      const fallback = "公告已关闭";
+      const fallbackText = "公告已关闭";
       const TONE = { ready: "live", loading: "idle", deleted: "idle", invalid: "warn", unavailable: "bad" };
+      const SOURCE = { remote: "远端配置", fallback: "本地兜底", none: "尚未取得" };
 
       function decode(value) {
         const bannerValue = value?.banner;
         if (typeof bannerValue !== "object" || bannerValue === null || Array.isArray(bannerValue)
             || typeof bannerValue.enabled !== "boolean"
             || typeof bannerValue.text !== "string") {
-          return null;
+          throw new Error("banner must be { enabled: boolean, text: string }");
         }
         return { banner: bannerValue };
       }
@@ -222,43 +227,51 @@ config.subscribe('ui', state => {
         return true;
       }
 
-      let lastSeq = -1;
-      function apply(event) {
-        const envelope = JSON.parse(event.data);
-        const item = envelope.entries?.ui ?? envelope.entry;
-        const kind = event.type === "snapshot" ? "snapshot" : "change";
-        if (typeof envelope.seq === "number") lastSeq = envelope.seq;
-        fields.seq.textContent = lastSeq >= 0 ? String(lastSeq) : "—";
-        fields.stream.textContent = envelope.streamId ? envelope.streamId.slice(0, 8) + "…" : "—";
-        fields.hash.textContent = item?.contentHash ? item.contentHash.slice(7, 19) + "…" : "—";
+      function render(state) {
+        fields.status.textContent = state.status;
+        fields.source.textContent = SOURCE[state.source] ?? state.source;
+        fields.error.textContent = state.errorCode ?? "—";
         fields.time.textContent = stamp();
+        const tone = TONE[state.status] ?? "idle";
+        const text = state.value?.banner?.enabled ? state.value.banner.text : fallbackText;
 
-        const tone = TONE[item?.status] ?? "idle";
-        if (item?.status === "deleted") {
-          showText(fallback);
-          setStatus("远端已删除，回落本地默认值", "idle");
+        if (state.status === "deleted") {
+          showText(fallbackText);
+          setStatus("远端已删除，回落本地默认值", tone);
           addLine("deleted", "配置被删除，页面改用默认值", "warn");
           return;
         }
-        const config = decode(item?.value);
-        if (config === null) {
-          setStatus("远端内容不合格，保留上一次有效显示", "warn");
-          addLine(kind, `序号 ${lastSeq} · 内容未通过校验，保留旧值`, "warn");
+        if (state.status === "invalid") {
+          showText(text);
+          setStatus(state.source === "remote"
+            ? "远端内容不合格，保留上一次有效显示"
+            : "远端内容不合格，改用本地兜底", tone);
+          addLine("invalid", `${state.errorCode ?? "INVALID"} · ${text}`, "warn");
           return;
         }
-        const next = config.banner.enabled ? config.banner.text : fallback;
-        const changed = showText(next);
-        setStatus(item.status === "ready" ? "已连接 · 配置生效" : `配置状态：${item.status}`, tone);
-        addLine(kind, `序号 ${lastSeq} · ${changed ? next : "内容相同，未重复回调"}`, "live");
+        if (state.status === "unavailable") {
+          showText(text);
+          setStatus("后端暂时连不上 Nacos，显示上一次有效值", tone);
+          addLine("offline", text, "bad");
+          return;
+        }
+        if (state.status === "loading") {
+          setStatus("正在连接配置流", tone);
+          addLine("init", "等待首个快照", "idle");
+          return;
+        }
+        const changed = showText(text);
+        setStatus("已连接 · 配置生效", tone);
+        addLine("ready", changed ? text : "内容相同，未重复回调", "live");
       }
 
-      const stream = new EventSource("/_web-config/v1/stream?key=ui");
-      stream.addEventListener("snapshot", apply);
-      stream.addEventListener("change", apply);
-      stream.onerror = () => {
-        setStatus("连接中断，浏览器会自动重连", "bad");
-        addLine("offline", "流断开，浏览器会自动重连", "bad");
-      };
+      const config = createWebConfig({
+        definitions: {
+          ui: { decode, fallback: { banner: { enabled: false, text: fallbackText } } },
+        },
+        onError: error => addLine("error", `${error.code} · ${error.message}`, "bad"),
+      });
+      config.subscribe("ui", render);
     </script>
   </body>
 </html>

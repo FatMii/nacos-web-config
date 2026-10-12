@@ -54,6 +54,8 @@ jobs:
       - name: Build ESM and type declarations
         working-directory: browser
         run: npm run build
+      - name: Check the demo copy matches the SDK build
+        run: diff -q browser/packages/browser/dist/index.js java/examples/spring-mvc/src/main/resources/static/web-config-sdk.js
       - name: Inspect publish payload
         working-directory: browser
         run: npm pack --workspace @fatmii/nacos-web-config --dry-run

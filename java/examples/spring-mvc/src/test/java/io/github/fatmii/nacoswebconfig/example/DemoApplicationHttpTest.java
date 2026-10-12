@@ -37,7 +37,12 @@ class DemoApplicationHttpTest {
         var page = client.send(get("/"), HttpResponse.BodyHandlers.ofString());
         assertEquals(200, page.statusCode());
         assertTrue(page.body().contains("Nacos Web Config"));
-        assertTrue(page.body().contains("/_web-config/v1/stream?key=ui"));
+        assertTrue(page.body().contains("./web-config-sdk.js"), "page should import the vendored SDK");
+
+        var sdk = client.send(get("/web-config-sdk.js"), HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, sdk.statusCode());
+        assertTrue(sdk.body().contains("export function createWebConfig"),
+                "the served SDK copy must expose the public factory");
 
         source.value("ui", "{\"banner\":{\"enabled\":true,\"text\":\"hello\"},\"refreshIntervalMs\":30000}");
         var stream = client.send(
