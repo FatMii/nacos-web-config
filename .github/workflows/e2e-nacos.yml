@@ -14,7 +14,7 @@ on:
       - '.github/workflows/e2e-nacos.yml'
 
 concurrency:
-  group: e2e-nacos-${{ github.workflow }}-${{ github.ref }}-${{ matrix.nacos }}
+  group: e2e-nacos-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
