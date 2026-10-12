@@ -168,7 +168,7 @@ test('Browser SDK preserves LKG across invalid Nacos content and clears it on de
   await remove()
   await waitFor(() => client.get('ui').status === 'deleted')
 
-  assert.equal(errors.length, 1)
+  assert.equal(errors.length, 1, `unexpected onError codes: ${JSON.stringify(errors.map(error => error.code))}`)
   assert.equal(errors[0].code, 'DECODER_ERROR')
   assert.deepEqual(client.get('ui'), {
     value: configValue('fallback'), source: 'fallback', status: 'deleted', stale: false,
@@ -347,7 +347,7 @@ async function publishContent(content) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      ...(v3 ? { accessToken: nacosToken } : {}),
+      ...(v3 ? { Authorization: `Bearer ${nacosToken}` } : {}),
     },
     body: new URLSearchParams(v3
       ? { namespaceId: 'public', dataId, groupName: group, content, type: 'json' }
@@ -394,7 +394,7 @@ async function remove() {
     : { dataId, group }).toString()
   const response = await fetch(url, {
     method: 'DELETE',
-    headers: v3 ? { accessToken: nacosToken } : {},
+    headers: v3 ? { Authorization: `Bearer ${nacosToken}` } : {},
   })
   await assertNacosSuccess(response, 'delete', v3)
 }
