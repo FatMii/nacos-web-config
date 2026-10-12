@@ -152,6 +152,22 @@ jobs:
           NACOS_SERVER_ADDR: ${{ matrix.client_addr }}
         run: npm run test:e2e
 
+      # The first run only covers live pushes; this one restarts the Java host under a connected
+      # browser and requires the page to reconnect and accept the restarted host's snapshot.
+      - name: Browser E2E across a host restart
+        working-directory: browser
+        env:
+          NWC_E2E_HOST: http://127.0.0.1:8080
+          NWC_E2E_NACOS: ${{ matrix.nacos_http }}
+          NWC_E2E_NACOS_API: ${{ matrix.nacos_api }}
+          NWC_E2E_NACOS_TOKEN: ${{ steps.token.outputs.value }}
+          NWC_E2E_HOST_JAR: ${{ steps.jar.outputs.path }}
+          NWC_E2E_JAVA: ${{ env.JAVA_HOME }}/bin/java
+          NWC_E2E_BROWSER_EXECUTABLE: ${{ steps.chrome.outputs.path }}
+          NACOS_SERVER_ADDR: ${{ matrix.client_addr }}
+          NWC_E2E_RESTART_ONLY: 'true'
+        run: npm run test:e2e:restart
+
       - name: Dump Nacos logs on failure
         if: failure()
         working-directory: dev-environment
