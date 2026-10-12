@@ -3,11 +3,11 @@ package io.github.fatmii.nacoswebconfig.mvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.fatmii.nacoswebconfig.core.ConfigRuntime;
 import java.time.Duration;
-import org.springframework.util.unit.DataSize;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.unit.DataSize;
 
 /** Spring MVC beans for the web configuration SSE endpoint. */
 @Configuration(proxyBeanMethods = false)
@@ -37,6 +37,7 @@ public class WebConfigMvcConfiguration {
 
     @Bean
     WebConfigErrorHandler webConfigErrorHandler() {
+        BenignDisconnectLogFilter.installIfLogbackPresent();
         return new WebConfigErrorHandler();
     }
 }

@@ -24,10 +24,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 final class WebConfigStreamService implements SmartLifecycle, AutoCloseable {
+    private static final Logger log = LoggerFactory.getLogger(WebConfigStreamService.class);
+
     private final ConfigRuntime runtime;
     private final ObjectMapper mapper;
     private final ConcurrentHashMap<SseEmitter, StreamSession> sessions = new ConcurrentHashMap<>();
@@ -87,7 +91,13 @@ final class WebConfigStreamService implements SmartLifecycle, AutoCloseable {
         var session = new StreamSession(emitter);
         emitter.onCompletion(() -> closeSession(session, false));
         emitter.onTimeout(() -> closeSession(session, false));
-        emitter.onError(error -> closeSession(session, false));
+        // Client aborts are expected for SSE; never completeWithError (that becomes an ERROR log).
+        emitter.onError(error -> {
+            if (log.isDebugEnabled()) {
+                log.debug("SSE stream ended ({})", describeDisconnect(error));
+            }
+            closeSession(session, false);
+        });
         var streamId = UUID.randomUUID().toString();
         var seq = new AtomicLong();
         try {
@@ -233,8 +243,12 @@ final class WebConfigStreamService implements SmartLifecycle, AutoCloseable {
             try {
                 session.emitter.send(pending.event());
             } catch (IOException | RuntimeException exception) {
-                // A failed socket write is already handled by the Servlet container. Re-dispatching
-                // it through completeWithError would turn an ordinary disconnect into an ERROR log.
+                // Failed writes are almost always client disconnects / broken pipes. Do not call
+                // completeWithError (ERROR log). Prefer not to complete() either — the socket is
+                // already dead and a second flush can produce another Tomcat ERROR line.
+                if (log.isDebugEnabled()) {
+                    log.debug("SSE send failed; closing quietly ({})", describeDisconnect(exception));
+                }
                 closeSession(session, false);
                 return;
             }
@@ -272,6 +286,15 @@ final class WebConfigStreamService implements SmartLifecycle, AutoCloseable {
         } catch (RuntimeException ignored) {
             // The service is already stopping; logical cleanup above is complete.
         }
+    }
+
+    private static String describeDisconnect(Throwable error) {
+        if (error == null) {
+            return "unknown";
+        }
+        var type = error.getClass().getSimpleName();
+        var message = error.getMessage();
+        return message == null || message.isBlank() ? type : type + ": " + message;
     }
 
     private record PendingEvent(SseEmitter.SseEventBuilder event, long bytes) {}

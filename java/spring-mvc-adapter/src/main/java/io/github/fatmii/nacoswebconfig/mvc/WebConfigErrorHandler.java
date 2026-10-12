@@ -1,15 +1,39 @@
 package io.github.fatmii.nacoswebconfig.mvc;
 
+import java.io.IOException;
 import java.util.Map;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
+/**
+ * Maps known request errors to stable JSON. Also swallows benign SSE client disconnects so the
+ * servlet container does not escalate a normal browser close/refresh into an ERROR log line.
+ *
+ * <p>Non-benign {@link IOException}s are rethrown so host-application I/O failures are unchanged.
+ */
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 final class WebConfigErrorHandler {
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    ResponseEntity<Void> ignoreAsyncDisconnect() {
+        return ResponseEntity.noContent().build();
+    }
+
+    @ExceptionHandler(IOException.class)
+    ResponseEntity<Void> ignoreIoDisconnect(IOException exception) throws IOException {
+        if (!BenignDisconnects.isBenign(exception)) {
+            throw exception;
+        }
+        return ResponseEntity.noContent().build();
+    }
+
     @ExceptionHandler(WebConfigRequestException.class)
     ResponseEntity<Map<String, String>> invalid(WebConfigRequestException exception) {
         if ("CONNECTION_LIMIT".equals(exception.code())) {
