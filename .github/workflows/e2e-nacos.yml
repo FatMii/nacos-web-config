@@ -168,6 +168,28 @@ jobs:
           NWC_E2E_RESTART_ONLY: 'true'
         run: npm run test:e2e:restart
 
+      - name: Start the Nginx proxy
+        working-directory: dev-environment
+        run: |
+          docker compose -f compose.yaml -f compose.ci.yaml \
+            --project-name nacos-web-config-ci --profile proxy up -d proxy
+
+      # Reach the host through the proxy instead of directly, so a buffered reverse proxy fails
+      # the run rather than shipping as "the page updates minutes later".
+      - name: Browser E2E through the Nginx proxy
+        working-directory: browser
+        env:
+          NWC_E2E_HOST: http://127.0.0.1:18081
+          NWC_E2E_NACOS: ${{ matrix.nacos_http }}
+          NWC_E2E_NACOS_API: ${{ matrix.nacos_api }}
+          NWC_E2E_NACOS_TOKEN: ${{ steps.token.outputs.value }}
+          NWC_E2E_HOST_JAR: ${{ steps.jar.outputs.path }}
+          NWC_E2E_JAVA: ${{ env.JAVA_HOME }}/bin/java
+          NWC_E2E_BROWSER_EXECUTABLE: ${{ steps.chrome.outputs.path }}
+          NACOS_SERVER_ADDR: ${{ matrix.client_addr }}
+          NWC_E2E_PROXY_ONLY: 'true'
+        run: npm run test:e2e:proxy
+
       - name: Dump Nacos logs on failure
         if: failure()
         working-directory: dev-environment
