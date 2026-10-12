@@ -96,9 +96,7 @@ jobs:
 
       - name: Package example Spring MVC host
         working-directory: java
-        run: |
-          mvn --batch-mode --no-transfer-progress -pl examples/spring-mvc -am package \
-            spring-boot:repackage -DskipTests
+        run: mvn --batch-mode --no-transfer-progress -pl examples/spring-mvc -am package -DskipTests
 
       - name: Resolve example jar
         id: jar
