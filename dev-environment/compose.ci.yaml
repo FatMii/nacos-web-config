@@ -1,0 +1,14 @@
+# CI overlay for nacos-web-config E2E.
+# Keeps digest-pinned images from compose.yaml; only tweaks admin auth for nacos3 so the
+# token helper can complete first-boot password rotation without a browser.
+#
+# Usage:
+#   docker compose -f compose.yaml -f compose.ci.yaml --project-name nacos-web-config-ci up -d nacos2
+#   docker compose -f compose.yaml -f compose.ci.yaml --project-name nacos-web-config-ci up -d nacos3
+services:
+  nacos3:
+    environment:
+      # Admin auth stays on (realistic). Console auth stays on.
+      # Identity values match compose.yaml defaults for local client reuse.
+      NACOS_AUTH_ADMIN_ENABLE: 'true'
+      NACOS_AUTH_CONSOLE_ENABLE: 'true'

@@ -1,0 +1,162 @@
+name: E2E Nacos
+
+# Heavy path (real Nacos + example host + Browser SDK). Keep Verify lightweight on every PR.
+on:
+  schedule:
+    - cron: '17 16 * * *' # ~00:17 CST
+  workflow_dispatch:
+  push:
+    branches: [main, 'feat/0.2.0-*']
+    paths:
+      - 'java/**'
+      - 'browser/**'
+      - 'dev-environment/**'
+      - '.github/workflows/e2e-nacos.yml'
+
+concurrency:
+  group: e2e-nacos-${{ github.workflow }}-${{ github.ref }}-${{ matrix.nacos }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Nacos ${{ matrix.nacos }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nacos: '2.5.3'
+            service: nacos2
+            client_addr: '127.0.0.1:18848'
+            nacos_http: 'http://127.0.0.1:18848'
+            nacos_api: v1
+            need_token: false
+          - nacos: '3.2.3'
+            service: nacos3
+            client_addr: '127.0.0.1:28848'
+            nacos_http: 'http://127.0.0.1:28848'
+            nacos_api: v3
+            need_token: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: java/pom.xml
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: browser/package-lock.json
+
+      - name: Start Nacos ${{ matrix.nacos }}
+        working-directory: dev-environment
+        run: |
+          docker compose -f compose.yaml -f compose.ci.yaml \
+            --project-name nacos-web-config-ci \
+            up -d ${{ matrix.service }}
+
+      - name: Wait until Nacos HTTP responds
+        run: |
+          deadline=$((SECONDS + 180))
+          while true; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "${{ matrix.nacos_http }}/nacos/" || echo 000)
+            if [[ "$code" =~ ^(200|301|302|404)$ ]]; then
+              echo "Nacos ready (HTTP $code)"
+              break
+            fi
+            if (( SECONDS >= deadline )); then
+              echo "Nacos did not become ready at ${{ matrix.nacos_http }} (last HTTP $code)"
+              docker compose -f dev-environment/compose.yaml -f dev-environment/compose.ci.yaml \
+                --project-name nacos-web-config-ci logs ${{ matrix.service }} || true
+              exit 1
+            fi
+            sleep 3
+          done
+
+      - name: Java adapter IT against live Nacos
+        working-directory: java
+        run: |
+          mvn --batch-mode --no-transfer-progress -pl nacos-adapter -am test \
+            -Dtest=NacosConfigSourceIT \
+            -Dsurefire.failIfNoSpecifiedTests=false \
+            -Dnacos.test.server=${{ matrix.client_addr }}
+
+      - name: Build Browser SDK
+        working-directory: browser
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Package example Spring MVC host
+        working-directory: java
+        run: |
+          mvn --batch-mode --no-transfer-progress -pl examples/spring-mvc -am package \
+            spring-boot:repackage -DskipTests
+
+      - name: Resolve example jar
+        id: jar
+        run: |
+          JAR=$(find "$GITHUB_WORKSPACE/java/examples/spring-mvc/target" -maxdepth 1 \
+            -name 'nacos-web-config-example-spring-mvc-*.jar' \
+            ! -name '*-sources.jar' ! -name '*-javadoc.jar' | head -n 1)
+          if [ -z "$JAR" ] || [ ! -f "$JAR" ]; then
+            echo "example jar not found in java/examples/spring-mvc/target"
+            ls "$GITHUB_WORKSPACE/java/examples/spring-mvc/target" || true
+            exit 1
+          fi
+          echo "path=$JAR" >> "$GITHUB_OUTPUT"
+
+      - name: Install Chromium for Playwright
+        working-directory: browser
+        run: npx --yes playwright@1.55.0 install --with-deps chromium
+
+      - name: Resolve Chromium path
+        id: chrome
+        run: |
+          CHROME=$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*/chrome-linux/*' | head -n 1)
+          if [ -z "$CHROME" ] || [ ! -x "$CHROME" ]; then
+            echo "Chromium executable not found under ~/.cache/ms-playwright"
+            find "$HOME/.cache/ms-playwright" -type f -name chrome | head -n 20 || true
+            exit 1
+          fi
+          echo "path=$CHROME" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch Nacos 3 Admin token
+        id: token
+        if: matrix.need_token
+        run: |
+          TOKEN=$(node dev-environment/scripts/fetch-nacos3-admin-token.mjs)
+          if [ -z "$TOKEN" ]; then
+            echo "empty admin token"
+            exit 1
+          fi
+          echo "value=$TOKEN" >> "$GITHUB_OUTPUT"
+        env:
+          NWC_NACOS3_URL: ${{ matrix.nacos_http }}
+
+      - name: Browser + host E2E
+        working-directory: browser
+        env:
+          NWC_E2E_HOST: http://127.0.0.1:8080
+          NWC_E2E_NACOS: ${{ matrix.nacos_http }}
+          NWC_E2E_NACOS_API: ${{ matrix.nacos_api }}
+          NWC_E2E_NACOS_TOKEN: ${{ steps.token.outputs.value }}
+          NWC_E2E_HOST_JAR: ${{ steps.jar.outputs.path }}
+          NWC_E2E_JAVA: ${{ env.JAVA_HOME }}/bin/java
+          NWC_E2E_BROWSER_EXECUTABLE: ${{ steps.chrome.outputs.path }}
+          NACOS_SERVER_ADDR: ${{ matrix.client_addr }}
+        run: npm run test:e2e
+
+      - name: Dump Nacos logs on failure
+        if: failure()
+        working-directory: dev-environment
+        run: |
+          docker compose -f compose.yaml -f compose.ci.yaml \
+            --project-name nacos-web-config-ci logs ${{ matrix.service }} || true
