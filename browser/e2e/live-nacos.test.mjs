@@ -442,7 +442,8 @@ async function docker(...args) {
 }
 
 async function startHost() {
-  const child = spawn(javaExecutable, ['-jar', hostJar], {
+  // The proxy scenario measures heartbeat latency, and the shipped 15s default is slower than its window.
+  const child = spawn(javaExecutable, ['-jar', hostJar, '--nacos-web-config.stream.heartbeat=2s'], {
     env: process.env,
     stdio: 'ignore',
     windowsHide: true,
