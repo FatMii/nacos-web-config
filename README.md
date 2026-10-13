@@ -53,6 +53,7 @@
 - [Local demo](#local-demo)
 - [Configuration reference](#configuration-reference)
 - [Operations (optional)](#operations-optional)
+- [Behind a gateway or proxy](#behind-a-gateway-or-proxy)
 - [Compatibility](#compatibility)
 - [Limitations](#limitations)
 - [Changelog](./CHANGELOG.md)
@@ -291,6 +292,48 @@ Counts are per process and reset on restart. No metric carries configuration con
 publish is counted here, and its SHA-256 (never its body) goes to the
 `io.github.fatmii.nacoswebconfig.REJECTIONS` logger. The bundled demo host runs Actuator, so
 `java/examples/spring-mvc` shows both surfaces.
+
+---
+
+# Behind a gateway or proxy
+
+The stream is one long-lived `text/event-stream` response per browser. Two things gateways
+normally "optimise" will bite it: an idle read timeout, and a rewritten `Host` header.
+
+Check any gateway in one command, from the origin your browser uses:
+
+```bash
+curl -N -H 'Accept: text/event-stream' 'https://your-host/_web-config/v1/stream?key=ui'
+```
+
+You should get `event:snapshot` immediately, then a `:ping` comment no later than
+`nacos-web-config.stream.heartbeat` (15s by default). Silence longer than the heartbeat means
+something in between is holding the stream.
+
+Measured against Nginx 1.28 in front of the bundled demo host — every number below is one run,
+publish to first byte at the client:
+
+| Gateway setting | Observed |
+| --- | --- |
+| `proxy_read_timeout 5s`, default `heartbeat: 15s` | the gateway closed the idle stream after ~5s. The SDK marked the key `unavailable` while keeping the previous value on screen, came back to `ready` within ~1.4s, and both configs published during the run still arrived. No `onError` fired |
+| `proxy_read_timeout 5s`, `heartbeat: 2s` | the stream stayed open for the whole 14s probe window |
+| `proxy_buffering on` vs `off`, with and without `proxy_ignore_headers X-Accel-Buffering` | 72–150 ms in all four variants: the starter already sends `X-Accel-Buffering: no` and `Cache-Control: no-store`, and nginx honoured them. `proxy_buffering off` is still what we recommend, but we could not reproduce a buffering delay to call it required |
+| `gzip on` including `text/event-stream` | 122 ms, no extra delay measured |
+| no `proxy_http_version 1.1` (plain HTTP/1.0 to the upstream) | 107 ms; we did not reproduce a problem either |
+| `proxy_set_header Host $host` | **broken**: a Spring Security login redirect dropped the port — `Location: http://127.0.0.1/login`. With `proxy_set_header Host $http_host` the same request returned `http://127.0.0.1:18089/login` |
+
+So the two settings that actually matter are `proxy_read_timeout` (keep it above your heartbeat
+interval) and `Host` (use `$http_host` if the host application issues redirects). The response
+headers the starter emits pass through untouched: `Content-Type: text/event-stream`,
+`Cache-Control: no-store`, `X-Accel-Buffering: no`.
+
+`dev-environment/proxy/nginx.conf` is the configuration CI runs the browser suite against, and
+`access: authenticated` behaves the same behind it: anonymous `Accept: text/event-stream` gets
+`401` with a JSON body, `Accept: text/html` gets the `302` login redirect, and an authenticated
+request receives its `event:snapshot`.
+
+We measured nginx only. Cloud balancers, CDNs, HTTP/2 and dev-server proxies (Vite and friends)
+are not covered by these numbers — run the curl check above before trusting one.
 
 ---
 

@@ -268,6 +268,10 @@
       <div class="faq-answer"><p>A host that runs Spring Boot Actuator automatically gains the health component <code>/actuator/health/nacosWebConfig</code>: whether Nacos is currently reachable, plus the state each key is serving (<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>). Three metrics appear as well: open stream count, frames written by frame kind, and refused publishes counted by reason code. A host without Actuator is untouched. Health details need <code>management.endpoint.health.show-details=always</code> — that is Boot's own default privacy policy.</p></div>
     </details>
     <details class="faq-item">
+      <summary>What does a gateway or reverse proxy need to get right?</summary>
+      <div class="faq-answer"><p>Our measurements found exactly two things that bite. First, the gateway's idle read timeout (nginx <code>proxy_read_timeout</code>) must be <strong>longer</strong> than the heartbeat interval (15s by default), otherwise the stream is cut on every idle window — the SDK reconnects and keeps the previous value on screen, but the page goes stale periodically. Second, pass <code>Host $http_host</code>, not <code>$host</code>, or your host application's login redirects lose the port. Buffering is usually not your problem: the response already carries <code>X-Accel-Buffering: no</code> and <code>Cache-Control: no-store</code>, which nginx honours. Self-check: <code>curl -N -H 'Accept: text/event-stream' https://your-host/_web-config/v1/stream?key=ui</code> should print <code>event:snapshot</code> immediately. The README's "Behind a gateway or proxy" section lists every measured number, including which gateways we did not test.</p></div>
+    </details>
+    <details class="faq-item">
       <summary>What are the limitations?</summary>
       <div class="faq-answer"><ul>
         <li>Whitelist keys are fixed at startup; adding a key means editing config and restarting.</li>

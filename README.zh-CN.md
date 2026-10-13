@@ -53,6 +53,7 @@
 - [本地演示](#本地演示)
 - [配置参考](#配置参考)
 - [运维（可选）](#运维可选)
+- [网关与反向代理](#网关与反向代理)
 - [兼容性](#兼容性)
 - [局限](#局限)
 - [Changelog](./CHANGELOG.zh-CN.md)
@@ -282,6 +283,37 @@ nacos-web-config:
 | `nacos.webconfig.rejections` | 被拒的发布次数，按原因码打标（`INVALID_JSON`、`TOO_LARGE`） |
 
 计数只统计当前进程，重启归零。任何指标都不带配置内容：一次被拒的发布在这里只有一个计数，它的 SHA-256（绝不包含原文）进 `io.github.fatmii.nacoswebconfig.REJECTIONS` 日志。仓库自带的示例应用装了 Actuator，`java/examples/spring-mvc` 两样都能看到。
+
+---
+
+# 网关与反向代理
+
+推送通道是每个浏览器一条长期的 `text/event-stream` 响应。网关里最常"帮你优化"的两件事会咬到它：空闲读超时，以及被改写的 `Host` 头。
+
+一条命令就能自查任意网关（用浏览器实际访问的那个域名）：
+
+```bash
+curl -N -H 'Accept: text/event-stream' 'https://你的域名/_web-config/v1/stream?key=ui'
+```
+
+应当立刻收到 `event:snapshot`，之后最长每隔 `nacos-web-config.stream.heartbeat`（默认 15s）收到一条 `:ping` 注释。安静超过一个心跳周期，就说明中间有个东西把流憋住了。
+
+下面是把仓库自带示例应用放在 Nginx 1.28 后面实测的结果，每一行数字都是一次"发布配置 → 客户端收到第一个字节"的实测值：
+
+| 网关配置 | 实测结果 |
+| --- | --- |
+| `proxy_read_timeout 5s` + 默认 `heartbeat: 15s` | 网关在 ~5s 空闲后把连接关掉。SDK 把该键标成 `unavailable`、页面上仍保留上一次的值，~1.4s 内回到 `ready`，这一轮里发布的两份配置都照样送达，`onError` 一次都没触发 |
+| `proxy_read_timeout 5s` + `heartbeat: 2s` | 整段 14s 探测窗口内连接一直没断 |
+| `proxy_buffering` 开 / 关，以及加不加 `proxy_ignore_headers X-Accel-Buffering` | 四种组合都是 72–150ms：starter 本来就发 `X-Accel-Buffering: no` 和 `Cache-Control: no-store`，nginx 照做了。`proxy_buffering off` 我们仍然推荐，但**没能复现出缓冲延迟，所以不敢写成必须** |
+| `gzip on` 且包含 `text/event-stream` | 122ms，没测出额外延迟 |
+| 不写 `proxy_http_version 1.1`（用 HTTP/1.0 回源） | 107ms，同样没复现出问题 |
+| `proxy_set_header Host $host` | **会坏**：Spring Security 的登录跳转把端口丢了 —— `Location: http://127.0.0.1/login`。改成 `proxy_set_header Host $http_host` 后同一请求返回 `http://127.0.0.1:18089/login` |
+
+所以真正要紧的只有两项：`proxy_read_timeout` 要大于你的心跳间隔；如果宿主应用会发跳转，`Host` 要用 `$http_host`。starter 发出的响应头能原样穿过网关：`Content-Type: text/event-stream`、`Cache-Control: no-store`、`X-Accel-Buffering: no`。
+
+`dev-environment/proxy/nginx.conf` 就是 CI 跑浏览器用例时用的那份配置。`access: authenticated` 在网关后面的表现和直连一致：匿名带 `Accept: text/event-stream` 拿到 `401` 和 JSON 错误体，`Accept: text/html` 拿到 `302` 登录跳转，登录后正常收到 `event:snapshot`。
+
+以上只测了 nginx。云负载均衡、CDN、HTTP/2、以及本地开发代理（Vite 这类）都不在这些数字的覆盖范围内 —— 用上面那条 curl 先在自己网关上验一遍再依赖它。
 
 ---
 
