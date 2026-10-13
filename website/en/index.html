@@ -226,7 +226,7 @@
         <tr><td>Java</td><td><code>17+</code></td><td>Spring Boot 3.x, servlet/MVC</td></tr>
         <tr><td>Nacos client</td><td><code>2.5.3</code></td><td>single supported client line</td></tr>
         <tr><td>Nacos server</td><td><code>2.5.3</code></td><td>full chain verified (Java tests + browser E2E)</td></tr>
-        <tr><td>Nacos server</td><td><code>3.2.3</code></td><td>Adapter tested; full browser path not claimed yet</td></tr>
+        <tr><td>Nacos server</td><td><code>3.2.3</code></td><td>Full chain verified (Java IT + browser E2E; nightly CI)</td></tr>
         <tr><td>Browsers</td><td>modern</td><td><code>fetch</code> + <code>ReadableStream</code>; no EventSource fallback</td></tr>
       </tbody>
     </table>
@@ -264,9 +264,13 @@
       <div class="faq-answer"><p>Content is hard-validated: it must be a JSON object within <code>max-bytes</code>. Non-conforming content is rejected and never overwrites the last known good value. If Nacos as a whole is unreachable, data is merely marked stale and pages keep rendering the last valid config.</p></div>
     </details>
     <details class="faq-item">
+      <summary>What can I monitor in production?</summary>
+      <div class="faq-answer"><p>A host that runs Spring Boot Actuator automatically gains the health component <code>/actuator/health/nacosWebConfig</code>: whether Nacos is currently reachable, plus the state each key is serving (<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>). Three metrics appear as well: open stream count, frames written by frame kind, and refused publishes counted by reason code. A host without Actuator is untouched. Health details need <code>management.endpoint.health.show-details=always</code> — that is Boot's own default privacy policy.</p></div>
+    </details>
+    <details class="faq-item">
       <summary>What are the limitations?</summary>
       <div class="faq-answer"><ul>
-        <li>Nacos 3.2.3: adapter tested; full browser path not claimed yet.</li>
+        <li>Whitelist keys are fixed at startup; adding a key means editing config and restarting.</li>
         <li>Servlet MVC only; no WebFlux.</li>
         <li>Values must be JSON objects under <code>max-bytes</code>.</li>
         <li>ESM-only SDK; older browsers need your own bundler/polyfill.</li>

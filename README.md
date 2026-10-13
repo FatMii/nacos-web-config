@@ -52,6 +52,7 @@
 - [Quick start](#quick-start)
 - [Local demo](#local-demo)
 - [Configuration reference](#configuration-reference)
+- [Operations (optional)](#operations-optional)
 - [Compatibility](#compatibility)
 - [Limitations](#limitations)
 - [Changelog](./CHANGELOG.md)
@@ -258,25 +259,60 @@ One logical key maps to one fixed Nacos config. Adding a key means editing `appl
 
 ---
 
+# Operations (optional)
+
+Nothing here is required to run the library. If your application uses Spring Boot Actuator (add
+`spring-boot-starter-actuator` if it does not), two things appear with no code of your own. A host
+without Actuator is untouched: no endpoint, no extra dependency, no startup requirement.
+
+**Health** — `GET /actuator/health/nacosWebConfig`
+
+```json
+{"status":"UP",
+ "details":{"source":"available",
+            "exposures":{"ui":{"status":"ready","hasValue":true}}}}
+```
+
+`source` is whether Nacos is currently reachable, and only it turns this component DOWN. A rejected
+or deleted config still serves its last-known-good value to browsers, so it shows up as a per-key
+state (`ready` / `invalid` / `deleted` / `unavailable`, plus the stable error code) instead of
+failing your readiness probe. Actuator hides these details by default;
+`management.endpoint.health.show-details=always` is what makes them visible.
+
+**Metrics** — `GET /actuator/metrics/<name>`
+
+| Metric | What it tells you |
+| --- | --- |
+| `nacos.webconfig.stream.connections` | SSE streams currently open in this process |
+| `nacos.webconfig.stream.events` | frames written to browsers, tagged `kind=snapshot`, `change`, `heartbeat` |
+| `nacos.webconfig.rejections` | publishes the runtime refused, tagged by reason code (`INVALID_JSON`, `TOO_LARGE`) |
+
+Counts are per process and reset on restart. No metric carries configuration content: a refused
+publish is counted here, and its SHA-256 (never its body) goes to the
+`io.github.fatmii.nacoswebconfig.REJECTIONS` logger. The bundled demo host runs Actuator, so
+`java/examples/spring-mvc` shows both surfaces.
+
+---
+
 # Compatibility
 
 | Dependency | Version | Notes |
 | --- | --- | --- |
 | Java | 17+ | Spring Boot 3.x, servlet/MVC |
 | Nacos client | 2.5.3 | single supported client line |
-| Nacos server | 2.5.3 | full chain verified (Java tests + browser E2E) |
-| Nacos server | 3.2.3 | Adapter tested; full browser path not claimed yet |
+| Nacos server | 2.5.3 | full chain verified (Java IT + browser E2E; nightly CI) |
+| Nacos server | 3.2.3 | full chain verified (Java IT + browser E2E; nightly CI; Admin token via `dev-environment/scripts/fetch-nacos3-admin-token.mjs`) |
 | Browsers | modern | `fetch` + `ReadableStream`; no EventSource fallback |
 
 ---
 
 # Limitations
 
-- Nacos 3.2.3: adapter tests pass; full browser path is not claimed yet (Admin token is awkward to automate there).
 - Servlet MVC only; no WebFlux.
 - Values must be JSON objects under `max-bytes`.
 - ESM-only SDK; older browsers need your own bundler/polyfill.
 - No admin UI; create and edit configs in the Nacos console.
+- Whitelist keys are fixed at startup; adding a key means editing config and restarting.
 
 ---
 

@@ -23,6 +23,11 @@ mvn -pl examples/spring-mvc -am spring-boot:run
 
 公共命名空间的 ID 是空字符串，因此 `NACOS_NAMESPACE` 默认留空；只有使用自定义命名空间时才设置其真实 namespace ID。
 
+这个示例另外引入了 `spring-boot-starter-actuator`，方便直接看到运维面（它不是 Starter 要求的依赖：去掉之后 `/actuator/**` 消失，应用照常启动）：
+
+- `http://127.0.0.1:8080/actuator/health/nacosWebConfig` —— Nacos 当前连不连得上，以及每个键在服务什么状态
+- `http://127.0.0.1:8080/actuator/metrics/nacos.webconfig.stream.connections` —— 当前挂着的长连接数，页面开着时刷新它能看到数字变化
+
 测试使用 `spring-boot-starter-test` 制品替换真实 Nacos，但仍穿过完整 core、MVC、HTTP 和 SSE 链路：
 
 ```powershell
@@ -53,7 +58,8 @@ Nacos 3.x 的宿主仍连接客户端端口 `28848`，但测试发布端也使�
 ```powershell
 $env:NWC_E2E_NACOS='http://127.0.0.1:28848'
 $env:NWC_E2E_NACOS_API='v3'
-$env:NWC_E2E_NACOS_TOKEN='<从管理员登录安全取得的短期 token>'
+# 从仓库根目录拿短期 Admin token（脚本只向 stdout 打印 token；首次强制改密用 CI 默认新密码）
+$env:NWC_E2E_NACOS_TOKEN=(node ..\..\..\dev-environment\scripts\fetch-nacos3-admin-token.mjs)
 ```
 
 Nacos 3 Admin API 默认强制鉴权；测试只读取环境变量中的短期 token，不接收或记录管理员密码。不要把 token 写入仓库或命令历史。

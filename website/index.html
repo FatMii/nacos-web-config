@@ -226,7 +226,7 @@
         <tr><td>Java</td><td><code>17+</code></td><td>Spring Boot 3.x，Servlet/MVC</td></tr>
         <tr><td>Nacos Client</td><td><code>2.5.3</code></td><td>唯一支持的客户端线</td></tr>
         <tr><td>Nacos Server</td><td><code>2.5.3</code></td><td>含浏览器完整链路实测（Java 测试 + browser E2E）</td></tr>
-        <tr><td>Nacos Server</td><td><code>3.2.3</code></td><td>适配层测过；完整浏览器链路暂不声称支持</td></tr>
+        <tr><td>Nacos Server</td><td><code>3.2.3</code></td><td>完整链路实测（Java IT + browser E2E；夜间 CI）</td></tr>
         <tr><td>浏览器</td><td>现代浏览器</td><td>需 <code>fetch</code> + <code>ReadableStream</code>，无 EventSource 回退</td></tr>
       </tbody>
     </table>
@@ -264,9 +264,13 @@
       <div class="faq-answer"><p>内容有硬校验：必须是 JSON 对象且不超过 <code>max-bytes</code>，不合格的内容被拒绝且不会覆盖最近有效值。Nacos 整体不可达时也只是标记 stale，页面继续用最后一次有效配置渲染。</p></div>
     </details>
     <details class="faq-item">
+      <summary>运维上能查到什么？</summary>
+      <div class="faq-answer"><p>装了 Spring Boot Actuator 的应用会自动多出一个健康组件 <code>/actuator/health/nacosWebConfig</code>：当前连不连得上 Nacos，以及每个键在服务什么状态（<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>）。另外三个指标：当前挂着的长连接数、按类型写出的帧数、被拒的发布次数（只按原因码打标，不带配置内容）。没装 Actuator 的应用完全没变化。健康细节要配 <code>management.endpoint.health.show-details=always</code> 才显示，那是 Spring Boot 自己的默认隐私策略。</p></div>
+    </details>
+    <details class="faq-item">
       <summary>有哪些限制？</summary>
       <div class="faq-answer"><ul>
-        <li>Nacos 3.2.3：适配层测过了；完整浏览器链路还没在 3.2.3 上声称支持。</li>
+        <li>白名单键在启动时定死；要加键就改配置并重启。</li>
         <li>只有 Servlet MVC，没有 WebFlux。</li>
         <li>值必须是不超过 <code>max-bytes</code> 的 JSON 对象。</li>
         <li>SDK 只发 ESM；老浏览器要自己做打包/兼容。</li>

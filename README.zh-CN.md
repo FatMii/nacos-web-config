@@ -52,6 +52,7 @@
 - [快速开始](#快速开始)
 - [本地演示](#本地演示)
 - [配置参考](#配置参考)
+- [运维（可选）](#运维可选)
 - [兼容性](#兼容性)
 - [局限](#局限)
 - [Changelog](./CHANGELOG.zh-CN.md)
@@ -257,25 +258,52 @@ nacos-web-config:
 
 ---
 
+# 运维（可选）
+
+用这个库不需要任何运维配置。如果你的应用本身在用 Spring Boot Actuator（没用的话加上
+`spring-boot-starter-actuator`），下面两样会自动出现，不用写一行代码。没装 Actuator 的应用完全不受影响：没有端点、不多依赖、不影响启动。
+
+**健康检查** —— `GET /actuator/health/nacosWebConfig`
+
+```json
+{"status":"UP",
+ "details":{"source":"available",
+            "exposures":{"ui":{"status":"ready","hasValue":true}}}}
+```
+
+`source` 表示当前连不连得上 Nacos，也只有它会把这个组件判成 DOWN。内容被拒或被删掉时，浏览器仍在收上一次的有效值，所以这类情况只作为每个键各自的状态列出来（`ready` / `invalid` / `deleted` / `unavailable`，附稳定错误码），不会把应用的就绪探针搞失败。Actuator 默认隐藏这些细节，要看到它们需要配 `management.endpoint.health.show-details=always`。
+
+**指标** —— `GET /actuator/metrics/<名称>`
+
+| 指标 | 说明 |
+| --- | --- |
+| `nacos.webconfig.stream.connections` | 本进程当前挂着多少条 SSE 长连接 |
+| `nacos.webconfig.stream.events` | 写给浏览器的帧数，按类型打标：`kind=snapshot`、`change`、`heartbeat` |
+| `nacos.webconfig.rejections` | 被拒的发布次数，按原因码打标（`INVALID_JSON`、`TOO_LARGE`） |
+
+计数只统计当前进程，重启归零。任何指标都不带配置内容：一次被拒的发布在这里只有一个计数，它的 SHA-256（绝不包含原文）进 `io.github.fatmii.nacoswebconfig.REJECTIONS` 日志。仓库自带的示例应用装了 Actuator，`java/examples/spring-mvc` 两样都能看到。
+
+---
+
 # 兼容性
 
 | 依赖 | 版本 | 说明 |
 | --- | --- | --- |
 | Java | 17+ | Spring Boot 3.x，Servlet/MVC |
 | Nacos Client | 2.5.3 | 唯一支持的客户端线 |
-| Nacos Server | 2.5.3 | 含浏览器完整链路实测（Java 测试 + browser E2E） |
-| Nacos Server | 3.2.3 | 适配层测过；完整浏览器链路暂不声称支持 |
+| Nacos Server | 2.5.3 | 完整链路实测（Java IT + browser E2E；夜间 CI） |
+| Nacos Server | 3.2.3 | 完整链路实测（Java IT + browser E2E；夜间 CI；Admin token 用 `dev-environment/scripts/fetch-nacos3-admin-token.mjs`） |
 | 浏览器 | 现代浏览器 | 需 `fetch` + `ReadableStream`，无 EventSource 回退 |
 
 ---
 
 # 局限
 
-- Nacos 3.2.3：适配层测过了；完整浏览器链路还没在 3.2.3 上声称支持（Admin token 不好自动化）。
 - 只有 Servlet MVC，没有 WebFlux。
 - 值必须是不超过 `max-bytes` 的 JSON 对象。
 - SDK 只发 ESM；老浏览器要自己做打包/兼容。
 - 没有管理界面；配置仍在 Nacos 控制台改。
+- 白名单键在启动时定死；要加键就改配置并重启。
 
 ---
 
