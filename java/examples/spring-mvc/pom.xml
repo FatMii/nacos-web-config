@@ -25,6 +25,12 @@
       <artifactId>nacos-web-config-spring-boot-starter</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!-- Demonstrates the optional operational surface: this one line is all a host adds to get
+         /actuator/health and the nacos.webconfig.* metrics. Remove it and both disappear. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.github.fatmii.nacoswebconfig</groupId>
       <artifactId>nacos-web-config-spring-boot-starter-test</artifactId>

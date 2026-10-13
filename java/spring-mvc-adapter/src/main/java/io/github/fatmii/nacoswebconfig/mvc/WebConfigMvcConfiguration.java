@@ -26,9 +26,18 @@ public class WebConfigMvcConfiguration {
                 maxPendingBytes.toBytes());
     }
 
+    /**
+     * Publishes the stream engine's counters under their own bean type. The engine itself stays
+     * package-private, so operational auto-configuration can observe traffic without gaining any
+     * control over sessions and without a second set of counters.
+     */
     @Bean
-    WebConfigStreamController webConfigStreamController(
-            WebConfigStreamService streams,
+    WebConfigStreamStatus webConfigStreamStatus(WebConfigStreamService streams) {
+        return streams.readOnlyView();
+    }
+
+    @Bean
+    WebConfigStreamController webConfigStreamController(            WebConfigStreamService streams,
             ObjectProvider<WebConfigAccessPolicy> accessPolicy,
             @Value("${nacos-web-config.stream.max-keys-per-connection:32}") int maxKeys) {
         return new WebConfigStreamController(

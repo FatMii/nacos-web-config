@@ -1,1 +1,3 @@
 io.github.fatmii.nacoswebconfig.autoconfigure.NacosWebConfigAutoConfiguration
+io.github.fatmii.nacoswebconfig.autoconfigure.NacosWebConfigHealthAutoConfiguration
+io.github.fatmii.nacoswebconfig.autoconfigure.NacosWebConfigMetricsAutoConfiguration

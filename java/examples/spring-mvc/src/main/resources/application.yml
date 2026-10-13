@@ -11,3 +11,15 @@ nacos-web-config:
       group: WEB_DEMO
       data-id: web-demo.public.json
       max-bytes: 65536
+
+management:
+  endpoints:
+    web:
+      # Example only: /actuator/metrics lets you watch the nacos.webconfig.* counters move while a
+      # browser is connected. A production host decides its own exposure policy.
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      # Boot hides health details by default, and so hides our per-key states with them.
+      show-details: always

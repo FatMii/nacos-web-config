@@ -29,6 +29,19 @@ public interface ConfigSource extends AutoCloseable {
      */
     Watch watch(Set<ConfigRef> refs, ConfigSink sink) throws ConfigSourceException;
 
+    /**
+     * Reports whether the remote configuration system is currently reachable.
+     *
+     * <p>Called by operational probes, so an implementation must answer from state it already
+     * tracks rather than performing a new remote call. Sources that are always local may keep the
+     * default.
+     *
+     * @return {@code true} when the remote system can currently be confirmed
+     */
+    default boolean available() {
+        return true;
+    }
+
     /** Closes source-owned resources. Repeated calls must be safe. */
     @Override
     void close();

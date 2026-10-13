@@ -37,6 +37,9 @@ final class WebConfigStreamService implements SmartLifecycle, AutoCloseable {
     private final ConcurrentHashMap<SseEmitter, StreamSession> sessions = new ConcurrentHashMap<>();
     private final AtomicBoolean running = new AtomicBoolean(true);
     private final AtomicInteger activeConnections = new AtomicInteger();
+    private final AtomicLong snapshotEvents = new AtomicLong();
+    private final AtomicLong changeEvents = new AtomicLong();
+    private final AtomicLong heartbeatEvents = new AtomicLong();
     private final ScheduledExecutorService heartbeats;
     private final ExecutorService sends;
     private final long connectionTimeoutMillis;
@@ -103,12 +106,12 @@ final class WebConfigStreamService implements SmartLifecycle, AutoCloseable {
         try {
             var subscription = runtime.subscribe(Set.copyOf(keys), new ConfigSubscriber() {
                 @Override public void onSnapshot(ConfigSnapshot snapshot) {
-                    enqueue(session, "snapshot", Map.of(
+                    enqueue(session, EventKind.SNAPSHOT, Map.of(
                             "protocol", 1, "streamId", streamId, "seq", 0,
                             "entries", wireEntries(snapshot.entries())));
                 }
                 @Override public void onChange(ConfigChange change) {
-                    enqueue(session, "change", Map.of(
+                    enqueue(session, EventKind.CHANGE, Map.of(
                             "protocol", 1, "streamId", streamId, "seq", seq.incrementAndGet(),
                             "key", change.alias(), "entry", wire(change.entry())));
                 }
@@ -140,7 +143,17 @@ final class WebConfigStreamService implements SmartLifecycle, AutoCloseable {
 
     private void heartbeatAll() {
         sessions.values().forEach(session -> enqueue(
-                session, SseEmitter.event().comment("ping"), ":ping\n\n".getBytes(StandardCharsets.UTF_8).length));
+                session, SseEmitter.event().comment("ping"),
+                ":ping\n\n".getBytes(StandardCharsets.UTF_8).length,
+                EventKind.HEARTBEAT));
+    }
+
+    /**
+     * Returns a live read-only view of the counters. The engine type stays package-private, so
+     * operational adapters can observe traffic without gaining control over sessions.
+     */
+    WebConfigStreamStatus readOnlyView() {
+        return new StreamStatusView();
     }
 
     @Override
@@ -190,19 +203,23 @@ final class WebConfigStreamService implements SmartLifecycle, AutoCloseable {
         return result;
     }
 
-    private void enqueue(StreamSession session, String name, Object payload) {
+    private void enqueue(StreamSession session, EventKind kind, Object payload) {
         try {
             var json = mapper.writeValueAsString(payload);
-            var bytes = ("event:" + name + "\ndata:" + json + "\n\n")
+            var bytes = ("event:" + kind.wireName + "\ndata:" + json + "\n\n")
                     .getBytes(StandardCharsets.UTF_8).length;
-            enqueue(session, SseEmitter.event().name(name).data(json), bytes);
+            enqueue(
+                    session, SseEmitter.event().name(kind.wireName).data(json), bytes, kind);
         } catch (IOException exception) {
             closeSession(session, true);
         }
     }
 
     private void enqueue(
-            StreamSession session, SseEmitter.SseEventBuilder event, long bytes) {
+            StreamSession session,
+            SseEmitter.SseEventBuilder event,
+            long bytes,
+            EventKind kind) {
         boolean schedule;
         boolean overflow;
         synchronized (session) {
@@ -211,7 +228,7 @@ final class WebConfigStreamService implements SmartLifecycle, AutoCloseable {
                 schedule = false;
                 overflow = true;
             } else {
-                session.queue.addLast(new PendingEvent(event, bytes));
+                session.queue.addLast(new PendingEvent(event, bytes, kind));
                 session.pendingBytes += bytes;
                 schedule = !session.draining;
                 session.draining = true;
@@ -257,6 +274,11 @@ final class WebConfigStreamService implements SmartLifecycle, AutoCloseable {
                     session.pendingBytes -= pending.bytes();
                 }
             }
+            switch (pending.kind()) {
+                case SNAPSHOT -> snapshotEvents.incrementAndGet();
+                case CHANGE -> changeEvents.incrementAndGet();
+                case HEARTBEAT -> heartbeatEvents.incrementAndGet();
+            }
         }
     }
 
@@ -297,7 +319,37 @@ final class WebConfigStreamService implements SmartLifecycle, AutoCloseable {
         return message == null || message.isBlank() ? type : type + ": " + message;
     }
 
-    private record PendingEvent(SseEmitter.SseEventBuilder event, long bytes) {}
+    private enum EventKind {
+        SNAPSHOT("snapshot"),
+        CHANGE("change"),
+        HEARTBEAT("ping");
+
+        private final String wireName;
+
+        EventKind(String wireName) {
+            this.wireName = wireName;
+        }
+    }
+
+    private record PendingEvent(SseEmitter.SseEventBuilder event, long bytes, EventKind kind) {}
+
+    private final class StreamStatusView implements WebConfigStreamStatus {
+        @Override public int activeConnections() {
+            return activeConnections.get();
+        }
+
+        @Override public long snapshotEvents() {
+            return snapshotEvents.get();
+        }
+
+        @Override public long changeEvents() {
+            return changeEvents.get();
+        }
+
+        @Override public long heartbeatEvents() {
+            return heartbeatEvents.get();
+        }
+    }
 
     private static final class StreamSession {
         private final SseEmitter emitter;

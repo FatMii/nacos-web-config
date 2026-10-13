@@ -3,6 +3,8 @@ package io.github.fatmii.nacoswebconfig.nacos;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -22,6 +24,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -195,5 +199,49 @@ class NacosConfigSourceTest {
         assertEquals("{\"version\":2}", assertInstanceOf(SourceEvent.Value.class, events.poll(2, TimeUnit.SECONDS)).content());
         assertNull(events.poll(100, TimeUnit.MILLISECONDS));
         source.close();
+    }
+
+    @Test
+    void availabilityProbeReflectsTheHealthLoopWithoutExtraRemoteCalls() throws Exception {
+        var service = mock(ConfigService.class);
+        when(service.getConfigAndSignListener(eq(UI.dataId()), eq(UI.group()), eq(3_000L), any()))
+                .thenReturn("{\"version\":1}");
+        var status = new AtomicReference<>("UP");
+        var remoteChecks = new AtomicInteger();
+        when(service.getServerStatus()).thenAnswer(invocation -> {
+            remoteChecks.incrementAndGet();
+            return status.get();
+        });
+        var events = new LinkedBlockingQueue<SourceEvent>();
+        var source = NacosConfigSource.borrowed(
+                service, Duration.ofSeconds(3), Duration.ofMillis(20));
+        source.watch(Set.of(UI), events::add);
+        events.take();
+
+        status.set("DOWN");
+        awaitAvailability(source, false);
+        status.set("UP");
+        awaitAvailability(source, true);
+
+        int checksAfterRecovery = remoteChecks.get();
+        for (int attempt = 0; attempt < 100; attempt++) {
+            assertTrue(source.available());
+        }
+        assertEquals(
+                checksAfterRecovery,
+                remoteChecks.get(),
+                "availability must be answered from the health loop, not a per-request Nacos call");
+        source.close();
+    }
+
+    private static void awaitAvailability(NacosConfigSource source, boolean expected)
+            throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (source.available() != expected) {
+            if (System.nanoTime() > deadline) {
+                fail("Nacos availability did not become " + expected + " within the recheck window");
+            }
+            TimeUnit.MILLISECONDS.sleep(5);
+        }
     }
 }

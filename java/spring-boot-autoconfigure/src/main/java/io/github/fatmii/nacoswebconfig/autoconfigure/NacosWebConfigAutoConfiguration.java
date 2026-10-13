@@ -3,7 +3,9 @@ package io.github.fatmii.nacoswebconfig.autoconfigure;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.config.ConfigService;
 import io.github.fatmii.nacoswebconfig.core.ConfigRef;
+import io.github.fatmii.nacoswebconfig.core.ConfigRejectionListener;
 import io.github.fatmii.nacoswebconfig.core.ConfigRuntime;
+import io.github.fatmii.nacoswebconfig.core.ConfigSource;
 import io.github.fatmii.nacoswebconfig.core.ConfigStatus;
 import io.github.fatmii.nacoswebconfig.core.ExposureDefinition;
 import io.github.fatmii.nacoswebconfig.mvc.WebConfigMvcConfiguration;
@@ -11,7 +13,9 @@ import io.github.fatmii.nacoswebconfig.mvc.WebConfigAccessPolicy;
 import io.github.fatmii.nacoswebconfig.nacos.NacosConfigSource;
 import io.github.fatmii.nacoswebconfig.nacos.NacosConfigServiceFactory;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -21,6 +25,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.web.servlet.DispatcherServlet;
@@ -46,7 +51,8 @@ public class NacosWebConfigAutoConfiguration {
     ConfigRuntime nacosWebConfigRuntime(
             NacosWebConfigProperties properties,
             ListableBeanFactory beanFactory,
-            NacosConfigServiceFactory configServiceFactory) {
+            NacosConfigServiceFactory configServiceFactory,
+            ObjectProvider<ConfigRejectionListener> rejectionListeners) {
         var source = selectSource(properties, beanFactory, configServiceFactory);
         var definitions = new ArrayList<ExposureDefinition>();
         if (properties.exposures() != null) {
@@ -55,7 +61,8 @@ public class NacosWebConfigAutoConfiguration {
                     new ConfigRef(exposure.group(), exposure.dataId()),
                     exposure.maxBytes())));
         }
-        var runtime = startWithRejectionLogging(definitions, source);
+        var runtime = startWithRejectionLogging(
+                definitions, source, rejectionListeners.orderedStream().toList());
         if (properties.startup().failFast()) {
             rejectUnavailableInitialState(runtime, definitions);
         }
@@ -67,16 +74,38 @@ public class NacosWebConfigAutoConfiguration {
 
     /**
      * Starts a runtime whose every content rejection is WARN-logged for operators (key, stable
-     * code, rejected-content sha256; never the raw body). Production auto-configuration and the
-     * starter-test runtime both go through here so the two paths stay observable identically.
+     * code, rejected-content sha256; never the raw body).
      */
     public static ConfigRuntime startWithRejectionLogging(
-            java.util.Collection<ExposureDefinition> definitions,
-            io.github.fatmii.nacoswebconfig.core.ConfigSource source) {
-        return ConfigRuntime.start(definitions, source, (alias, code, rejectedHash) ->
-                REJECTION_LOG.warn(
-                        "rejected content for exposure '{}' ({}); serving last known good value; rejected sha256={}",
-                        alias, code, rejectedHash));
+            Collection<ExposureDefinition> definitions,
+            ConfigSource source) {
+        return startWithRejectionLogging(definitions, source, List.of());
+    }
+
+    /**
+     * Same as {@link #startWithRejectionLogging(Collection, ConfigSource)}, additionally fanning
+     * every rejection out to operator-supplied sinks. Production auto-configuration and the
+     * starter-test runtime both go through here so the two paths stay observable identically. A
+     * failing sink never affects state, delivery, or the other sinks.
+     */
+    public static ConfigRuntime startWithRejectionLogging(
+            Collection<ExposureDefinition> definitions,
+            ConfigSource source,
+            Collection<ConfigRejectionListener> operatorListeners) {
+        var extras = List.copyOf(operatorListeners);
+        ConfigRejectionListener listener = (alias, code, rejectedHash) -> {
+            REJECTION_LOG.warn(
+                    "rejected content for exposure '{}' ({}); serving last known good value; rejected sha256={}",
+                    alias, code, rejectedHash);
+            for (var extra : extras) {
+                try {
+                    extra.onRejected(alias, code, rejectedHash);
+                } catch (RuntimeException ignored) {
+                    // Diagnostics must never alter state or delivery.
+                }
+            }
+        };
+        return ConfigRuntime.start(definitions, source, listener);
     }
 
     /** Supplies the official Nacos client creation boundary unless the host replaces it. */

@@ -212,6 +212,20 @@ class ConfigRuntimeTest {
         }
     }
 
+    @Test
+    void readOnlyProbeExposesImmutableAllowlistAndSourceAvailability() {
+        var flags = new ExposureDefinition("flags", new ConfigRef("WEB_DEMO", "web-demo.flags.json"), 100);
+        var source = new InMemoryConfigSource();
+        try (var runtime = ConfigRuntime.start(List.of(UI, flags), source)) {
+            assertEquals(Set.of("ui", "flags"), runtime.aliases());
+            assertThrows(UnsupportedOperationException.class, () -> runtime.aliases().add("other"));
+            assertTrue(runtime.sourceAvailable(), "a source without a reachability probe defaults to available");
+
+            source.reportAvailable(false);
+            assertFalse(runtime.sourceAvailable());
+        }
+    }
+
     private static ConfigSubscriber subscriber(List<ConfigChange> changes) {
         return new ConfigSubscriber() {
             @Override public void onSnapshot(ConfigSnapshot snapshot) {}

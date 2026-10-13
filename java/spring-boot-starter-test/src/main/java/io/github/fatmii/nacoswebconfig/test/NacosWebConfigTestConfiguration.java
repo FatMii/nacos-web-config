@@ -3,9 +3,11 @@ package io.github.fatmii.nacoswebconfig.test;
 import io.github.fatmii.nacoswebconfig.autoconfigure.NacosWebConfigAutoConfiguration;
 import io.github.fatmii.nacoswebconfig.autoconfigure.NacosWebConfigProperties;
 import io.github.fatmii.nacoswebconfig.core.ConfigRef;
+import io.github.fatmii.nacoswebconfig.core.ConfigRejectionListener;
 import io.github.fatmii.nacoswebconfig.core.ConfigRuntime;
 import io.github.fatmii.nacoswebconfig.core.ExposureDefinition;
 import java.util.LinkedHashMap;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -27,13 +29,18 @@ public class NacosWebConfigTestConfiguration {
     @Bean
     @ConditionalOnMissingBean
     ConfigRuntime nacosWebConfigTestRuntime(
-            NacosWebConfigProperties properties, InMemoryWebConfigSource source) {
+            NacosWebConfigProperties properties,
+            InMemoryWebConfigSource source,
+            ObjectProvider<ConfigRejectionListener> rejectionListeners) {
         var definitions = properties.exposures().entrySet().stream()
                 .map(entry -> new ExposureDefinition(
                         entry.getKey(),
                         new ConfigRef(entry.getValue().group(), entry.getValue().dataId()),
                         entry.getValue().maxBytes()))
                 .toList();
-        return NacosWebConfigAutoConfiguration.startWithRejectionLogging(definitions, source);
+        // The same sinks production uses (including Actuator's rejection counter) are honoured, so
+        // a test observes exactly what a host observes.
+        return NacosWebConfigAutoConfiguration.startWithRejectionLogging(
+                definitions, source, rejectionListeners.orderedStream().toList());
     }
 }

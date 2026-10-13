@@ -7,6 +7,7 @@ final class InMemoryConfigSource implements ConfigSource {
     private ConfigSink lastSink;
     private boolean watchClosed;
     private boolean sourceClosed;
+    private boolean available = true;
 
     @Override
     public Watch watch(Set<ConfigRef> refs, ConfigSink sink) {
@@ -41,6 +42,15 @@ final class InMemoryConfigSource implements ConfigSource {
 
     boolean sourceClosed() {
         return sourceClosed;
+    }
+
+    void reportAvailable(boolean value) {
+        available = value;
+    }
+
+    @Override
+    public boolean available() {
+        return available;
     }
 
     @Override

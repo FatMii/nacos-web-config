@@ -42,6 +42,7 @@ public final class NacosConfigSource implements ConfigSource {
     private final ScheduledThreadPoolExecutor healthChecks;
     private final ArrayList<NacosWatch> watches = new ArrayList<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private volatile boolean available = true;
 
     private NacosConfigSource(
             ConfigService service, Duration timeout, Duration recheckInterval, boolean ownsService) {
@@ -202,6 +203,11 @@ public final class NacosConfigSource implements ConfigSource {
         }
     }
 
+    @Override
+    public boolean available() {
+        return available;
+    }
+
     private void recheck() {
         if (closed.get()) {
             return;
@@ -215,13 +221,16 @@ public final class NacosConfigSource implements ConfigSource {
         if (registrations.isEmpty()) {
             return;
         }
-        boolean available;
+        boolean reachable;
         try {
-            available = "UP".equalsIgnoreCase(service.getServerStatus());
+            reachable = "UP".equalsIgnoreCase(service.getServerStatus());
         } catch (RuntimeException exception) {
-            available = false;
+            reachable = false;
         }
-        if (!available) {
+        // Cached for operational probes: Nacos answers getServerStatus() from its own connection
+        // state, so health checks must not add a second remote round trip per request.
+        available = reachable;
+        if (!reachable) {
             registrations.forEach(Registration::markUnavailable);
             return;
         }

@@ -117,6 +117,27 @@ public final class ConfigRuntime implements AutoCloseable {
     }
 
     /**
+     * Returns the fixed allowlist this runtime serves.
+     *
+     * @return immutable exposure aliases
+     */
+    public Set<String> aliases() {
+        return definitions.keySet();
+    }
+
+    /**
+     * Reports whether the underlying source can currently confirm its remote system.
+     *
+     * <p>Intended for operational probes; it never mutates state and never blocks on the remote
+     * system itself.
+     *
+     * @return {@code true} when the source reports itself available
+     */
+    public boolean sourceAvailable() {
+        return source.available();
+    }
+
+    /**
      * Registers a subscriber and delivers one complete snapshot before later changes.
      *
      * @param aliases allowlisted aliases to observe
