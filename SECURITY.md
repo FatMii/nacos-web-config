@@ -27,4 +27,18 @@ Read this before filing, to decide whether the issue is in scope:
 - SSE responses use `no-store`. Subscription keys are format-checked. Connection count and per-connection pending bytes are capped; slow clients that exceed the budget are disconnected.
 - The product does not persist config bodies to disk. Caches stay in memory.
 
+### Boundaries of the CVE-2026-47890 exemption
+
+`spring-webmvc` 6.2.x is affected by CVE-2026-47890 (stream corruption when Server-Sent Events carry
+view fragments). No patch exists on the Spring Boot 3.5 line — the fix is Spring Framework 7.0.9,
+which requires Spring Boot 4 — so `.trivyignore` records an exemption for this repository instead.
+
+The exemption describes this library, not every host that uses it. What this library pushes is
+`SseEmitter` events whose payload is a JSON string, and it contains no view or template layer;
+`WebConfigNoViewFragmentOutputTest` fails the build if a view object ever reaches the SSE path.
+
+**If your own application renders Spring MVC view fragments, or pushes HTML fragments over its own
+SSE endpoints, that application is exposed whether or not this library is present.** Upgrade it to
+Spring Boot 4; the exemption here does not cover it.
+
 Out of scope: vulnerabilities in the host application, in Nacos Server itself, or that depend only on the user’s environment (for example a misconfigured Nginx).
