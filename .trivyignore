@@ -5,3 +5,15 @@
 # Maven Central, so Boot 3.5.x cannot clear the finding by a patch bump.
 # Revisit when upgrading to Spring Boot 4.x.
 CVE-2026-47884
+
+# CVE-2026-47890 (Spring Framework: SSE stream corruption when pushing view fragments).
+# Affected: spring-webmvc / spring-webflux 6.2.0-6.2.19 and 7.0.0-7.0.8; fixed in 7.0.9.
+# Checked 2026-10-13: 6.2.20 is not published on Maven Central (HTTP 404), so Boot 3.5.x has no
+# open-source patch to bump to.
+# The affected branch runs only when the SSE payload is a ModelAndView
+# (DefaultSseEmitterHandler -> FragmentHandler.handle), read from the 6.2.19 bytecode in use.
+# This project pushes SseEmitter event builders carrying JSON strings and declares no view
+# resolver, template engine, or fragment rendering, so the branch is never entered.
+# Host applications that do stream view fragments over SSE need Spring Boot 4 / Framework 7.0.9.
+# Revisit when upgrading to Spring Boot 4.x.
+CVE-2026-47890
