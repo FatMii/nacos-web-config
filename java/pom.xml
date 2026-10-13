@@ -43,6 +43,7 @@
     <module>spring-boot-starter</module>
     <module>spring-boot-starter-test</module>
     <module>examples/spring-mvc</module>
+    <module>examples/spring-mvc-secured</module>
   </modules>
 
   <properties>

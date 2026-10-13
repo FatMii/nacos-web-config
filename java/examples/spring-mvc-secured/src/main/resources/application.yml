@@ -1,0 +1,18 @@
+nacos-web-config:
+  enabled: true
+  access: authenticated
+  nacos:
+    server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+    namespace: ${NACOS_NAMESPACE:}
+  exposures:
+    ui:
+      group: WEB_DEMO
+      data-id: web-demo.private.json
+      max-bytes: 65536
+
+spring:
+  security:
+    user:
+      # Example-only credentials for the in-memory user; a real host brings its own accounts.
+      name: ${DEMO_USER:demo}
+      password: ${DEMO_PASSWORD:demo}
