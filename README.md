@@ -22,7 +22,7 @@
   <a href="#"><img alt="Spring Boot" src="https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen"></a>
 </p>
 
-> **0.1.0** is on Maven Central and npm. The quick start below installs from those registries.
+> **0.2.0** is on Maven Central and npm. The quick start below installs from those registries.
 
 <p align="center">
   <a href="https://fatmii.github.io/nacos-web-config/architecture/pipeline.html">
