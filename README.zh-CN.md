@@ -437,6 +437,25 @@ curl -X POST http://127.0.0.1:8848/nacos/v1/cs/configs \
 | Nacos Server | 3.2.3 | 完整链路实测（Java IT + browser E2E；夜间 CI；Admin token 用 `dev-environment/scripts/fetch-nacos3-admin-token.mjs`） |
 | 浏览器 | 现代浏览器 | 需 `fetch` + `ReadableStream`，无 EventSource 回退 |
 
+### 最终装进你应用的那些版本，谁说了算
+
+不是我们。用一个只导入 `spring-boot-dependencies` 3.5.16、再加本库 starter 的一次性消费者工程实测：
+
+| 构件 | 该消费者实际解析到 | 我们自己构建里钉的 |
+| --- | --- | --- |
+| `jackson-databind` | `2.21.4`（听你的 BOM） | `2.21.7` |
+| `tomcat-embed-core` | `10.1.55`（听你的 BOM） | `10.1.60` |
+| `spring-webmvc` | `6.2.19`（听你的 BOM） | `6.2.19` |
+| `com.alibaba.nacos:nacos-client` | `2.5.3`（我们的，没有别人管它） | `2.5.3` |
+
+我们在父 pom 里提前钉的那些版本（原因写在父 pom 的注释里，多数是安全公告）只保护我们自己的构建和 CI，**不会传进你的依赖树**；想要就在你自己的工程里管理。而且你的 `dependencyManagement` 两个方向都赢：在同一个消费者里导入 `jackson-bom` `2.19.0`，结果解析成 `jackson-databind:2.19.0`，降级了也不报错。所以别猜，直接看：
+
+```bash
+mvn -Dincludes='com.fasterxml.jackson.core:*,org.apache.tomcat.embed:*' dependency:tree
+```
+
+`nacos-client` 是唯一由我们带进来的第三方版本。如果你的应用本身也用 Nacos 客户端，就把版本统一在自己这边的依赖管理里；本库是照 `2.5.3` 这条线测的。
+
 ---
 
 # 局限

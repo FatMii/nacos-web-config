@@ -290,6 +290,10 @@
       </ul></div>
     </details>
     <details class="faq-item">
+      <summary>Which third-party dependencies come along, and do they override my versions?</summary>
+      <div class="faq-answer"><p>Only <code>nacos-client</code> (2.5.3) arrives with us. jackson, tomcat and Spring stay under your own BOM: a throwaway consumer that imported Spring Boot 3.5.16 resolved <code>jackson-databind 2.21.4</code> and <code>tomcat-embed-core 10.1.55</code>, not the 2.21.7 / 10.1.60 we ahead-pin in our own build for security advisories — if you want those fixes, manage them in your <code>dependencyManagement</code>. The other direction holds too: pinning <code>jackson-bom</code> to 2.19.0 in that same consumer produced 2.19.0, silently, with nothing from us overriding it. So check with <code>mvn dependency:tree</code> instead of assuming. The README's "Who decides which versions end up in your application" section has the full table.</p></div>
+    </details>
+    <details class="faq-item">
       <summary>Is there a full configuration reference?</summary>
       <div class="faq-answer"><p>Yes. The README “Configuration reference” is a full YAML sample with defaults and inline comments for every field. One principle: any invalid value fails startup with a precise message—nothing is silently defaulted.</p></div>
     </details>

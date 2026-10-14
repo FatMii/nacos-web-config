@@ -290,6 +290,10 @@
       </ul></div>
     </details>
     <details class="faq-item">
+      <summary>会带入哪些第三方依赖？会不会影响我已有的版本？</summary>
+      <div class="faq-answer"><p>只有 <code>nacos-client</code>（2.5.3）是我们带进来的。jackson、tomcat、spring 这些仍由你自己的 BOM 决定：实测一个只导入 Spring Boot 3.5.16 BOM 的消费者，解析到的是 <code>jackson-databind 2.21.4</code> 和 <code>tomcat-embed-core 10.1.55</code>，而不是我们自己构建里为了安全公告提前钉的 2.21.7 / 10.1.60 —— 想要那几个修复得你自己在 <code>dependencyManagement</code> 里提上去。反方向也成立：你把 <code>jackson-bom</code> 钉成 2.19.0，最终就是 2.19.0，我们不会拦也不会警告，所以别猜，跑 <code>mvn dependency:tree</code> 看。README「兼容性 → 最终装进你应用的那些版本，谁说了算」有完整对照表。</p></div>
+    </details>
+    <details class="faq-item">
       <summary>有没有全部配置项的清单？</summary>
       <div class="faq-answer"><p>有。README 的「配置参考」给了一份带默认值的完整 YAML，每项旁边用注释说明作用。原则只有一条：填错就启动失败并给精确报错，不会悄悄用默认值跑起来。</p></div>
     </details>

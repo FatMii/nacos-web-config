@@ -482,6 +482,32 @@ decode it as UTF-8 before you start fixing the wrong side.
 | Nacos server | 3.2.3 | full chain verified (Java IT + browser E2E; nightly CI; Admin token via `dev-environment/scripts/fetch-nacos3-admin-token.mjs`) |
 | Browsers | modern | `fetch` + `ReadableStream`; no EventSource fallback |
 
+### Who decides which versions end up in your application
+
+We do not. Measured with a throwaway consumer that imports `spring-boot-dependencies` 3.5.16 and
+adds only this starter:
+
+| Artifact | Resolved in that consumer | Pinned in our own build |
+| --- | --- | --- |
+| `jackson-databind` | `2.21.4` — your BOM's choice | `2.21.7` |
+| `tomcat-embed-core` | `10.1.55` — your BOM's choice | `10.1.60` |
+| `spring-webmvc` | `6.2.19` — your BOM's choice | `6.2.19` |
+| `com.alibaba.nacos:nacos-client` | `2.5.3` — ours; nothing else manages it | `2.5.3` |
+
+The versions we ahead-pin in our parent pom (the reasons are commented there, mostly
+security advisories) protect our build and CI. They do not travel into your dependency tree, so if
+you want them, manage them yourself. And your `dependencyManagement` wins in both directions:
+importing `jackson-bom` `2.19.0` in that same consumer produced `jackson-databind:2.19.0`, a
+downgrade, without any warning. Check what you actually get rather than assuming:
+
+```bash
+mvn -Dincludes='com.fasterxml.jackson.core:*,org.apache.tomcat.embed:*' dependency:tree
+```
+
+`nacos-client` is the only third-party version we bring with us. If your application already uses
+the Nacos client, keep one version in your own dependency management; `2.5.3` is the line this
+library is tested against.
+
 ---
 
 # Limitations
