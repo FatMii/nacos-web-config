@@ -28,7 +28,16 @@ Wait until the consoles respond before running tests.
 | Service | Role | Console / client |
 | --- | --- | --- |
 | `nacos2` | Nacos Server **2.5.3** (primary supported line) | http://127.0.0.1:18848/nacos · client `127.0.0.1:18848` |
-| `nacos3` | Nacos Server **3.2.3** (adapter-tested only) | http://127.0.0.1:28080 · client `127.0.0.1:28848` |
+| `nacos3` | Nacos Server **3.2.3** (full E2E in nightly CI) | http://127.0.0.1:28080 · client `127.0.0.1:28848` |
+
+### Nacos 3 Admin token (for browser E2E)
+
+```powershell
+# from repo root, after nacos3 is up
+node .\dev-environment\scripts\fetch-nacos3-admin-token.mjs
+```
+
+The script prints only the accessToken. It may rotate the bootstrap password once to the CI default (`NWC_NACOS3_NEW_PASSWORD`, see script header). Do not commit tokens or passwords.
 
 Ports bind to loopback only. Data lives in named Docker volumes; copying this folder does not copy data. The script never deletes volumes or containers.
 

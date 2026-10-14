@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for looking. One author maintains this project today. Issues and small PRs are welcome; for behavioral changes, open an issue first. Security: see [SECURITY.md](SECURITY.md). Do not file public security issues.
+Thanks for looking. One author maintains this project today. Issues and small PRs are welcome; for behavioral changes, open an issue first - and check [ROADMAP.md](ROADMAP.md) first, because its "Not planned" list is deliberate. Security: see [SECURITY.md](SECURITY.md). Do not file public security issues.
 
 Chinese README: [README.zh-CN.md](README.zh-CN.md)
 
@@ -14,7 +14,7 @@ Chinese README: [README.zh-CN.md](README.zh-CN.md)
 
 | Path | What it is |
 | --- | --- |
-| `java/` | 6 published modules + `examples/spring-mvc` reference host |
+| `java/` | 6 published modules + two reference hosts: `examples/spring-mvc` (public) and `examples/spring-mvc-secured` (`access: authenticated` with Spring Security) |
 | `browser/` | TypeScript SDK (workspace `@fatmii/nacos-web-config`) |
 | `dev-environment/` | digest-pinned local Nacos 2.5.3 + 3.2.3 (optional Nginx) for real-server IT / E2E |
 | `website/` | static landing site (plain HTML/CSS/JS, no build step) |
@@ -24,18 +24,26 @@ See also `dev-environment/README.md`.
 ## Running the checks
 
 ```bash
-# Java reactor (62 tests; *IT files are excluded by default)
+# Java reactor (unit/HTTP tests; *IT is not picked up by Surefire naming defaults)
 cd java && mvn verify
 
 # Real-Nacos integration test (start dev-environment/ first)
 mvn -pl nacos-adapter -am test -Dtest=NacosConfigSourceIT \
     -Dsurefire.failIfNoSpecifiedTests=false -Dnacos.test.server=127.0.0.1:18848
 
-# Browser SDK (19 behavior tests)
+# Browser SDK behavior tests
 cd browser && npm ci && npm test && npm run build
+
+# Browser end-to-end against real Nacos (start dev-environment/ first; the
+# workflow file lists the environment variables each leg needs)
+cd browser && npm run test:e2e
 ```
 
-CI runs the same checks on every push (`.github/workflows/verify.yml`), including SBOM generation and vulnerability/license scanning. HIGH/CRITICAL findings fail the build.
+CI:
+
+- Every push/PR: `.github/workflows/verify.yml` (Java verify, browser unit tests, SBOM / Trivy). HIGH/CRITICAL findings fail the build.
+- Nightly + manual + pushes to `main` / `feat/0.2.0-*`: `.github/workflows/e2e-nacos.yml` (real Nacos 2.5.3 / 3.2.3, adapter IT, example host, Browser SDK + Chromium).
+- Nacos 3 Admin token helper: `node dev-environment/scripts/fetch-nacos3-admin-token.mjs`
 
 ## Conventions
 
