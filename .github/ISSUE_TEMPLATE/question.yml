@@ -20,7 +20,7 @@ body:
     id: versions
     attributes:
       label: Versions
-      placeholder: starter 0.1.0, SDK 0.1.0, Spring Boot 3.5.x, Nacos server 2.5.3
+      placeholder: starter 0.2.0, SDK 0.2.0, Spring Boot 3.5.x, Nacos server 2.5.3
   - type: checkboxes
     id: checks
     attributes:

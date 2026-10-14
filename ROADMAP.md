@@ -3,8 +3,8 @@
 Short version of what we are building next. It is a plan, not a contract: items move when a maintainer
 or enough users push them, and anything here can be dropped.
 
-Questions and proposals go to [issues](https://github.com/FatMii/nacos-web-config/issues) with the
-`question` label until Discussions is enabled here; concrete bugs and requests use the forms below.
+Questions go to [Discussions](https://github.com/FatMii/nacos-web-config/discussions); concrete bugs and
+requests use the [issue forms](https://github.com/FatMii/nacos-web-config/issues/new/choose).
 The rule that decides everything on this page is the one the README states: a browser may read a
 whitelist of Nacos JSON keys, and nothing else.
 
