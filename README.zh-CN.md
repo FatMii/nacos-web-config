@@ -130,7 +130,7 @@ Nacos 暂时连不上时，不会把页面上的值清掉，只是标成过期�
 <dependency>
   <groupId>io.github.fatmii.nacoswebconfig</groupId>
   <artifactId>nacos-web-config-spring-boot-starter</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
