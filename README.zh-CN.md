@@ -54,6 +54,7 @@
 - [配置参考](#配置参考)
 - [运维（可选）](#运维可选)
 - [网关与反向代理](#网关与反向代理)
+- [前端开发代理与框架接法](#前端开发代理与框架接法)
 - [兼容性](#兼容性)
 - [局限](#局限)
 - [Changelog](./CHANGELOG.zh-CN.md)
@@ -303,6 +304,8 @@ management:
 
 计数只统计当前进程，重启归零。任何指标都不带配置内容：一次被拒的发布在这里只有一个计数，它的 SHA-256（绝不包含原文）进 `io.github.fatmii.nacoswebconfig.REJECTIONS` 日志。仓库自带的示例应用装了 Actuator，`java/examples/spring-mvc` 两样都能看到。
 
+`stream.connections` 是一个上界：客户端已经消失的流，要等服务端下一次往它写东西（心跳或推送）失败才会被放掉，所以浏览器关掉后这个数字还会多算一小会儿。我们这几轮实测大约在一个心跳周期内回落；看它之前先刷一次。
+
 ---
 
 # 网关与反向代理
@@ -333,6 +336,64 @@ curl -N -H 'Accept: text/event-stream' 'https://你的域名/_web-config/v1/stre
 `dev-environment/proxy/nginx.conf` 就是 CI 跑浏览器用例时用的那份配置。`access: authenticated` 在网关后面的表现和直连一致：匿名带 `Accept: text/event-stream` 拿到 `401` 和 JSON 错误体，`Accept: text/html` 拿到 `302` 登录跳转，登录后正常收到 `event:snapshot`。
 
 以上只测了 nginx。云负载均衡、CDN、HTTP/2、以及本地开发代理（Vite 这类）都不在这些数字的覆盖范围内 —— 用上面那条 curl 先在自己网关上验一遍再依赖它。
+
+---
+
+# 前端开发代理与框架接法
+
+SDK 永远请求"把页面发出来的那个源"，所以本地开发服务器只要转发 `/_web-config` 就够：
+
+```js
+// vite.config.js
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  server: {
+    proxy: { '/_web-config': { target: 'http://127.0.0.1:8080' } },
+  },
+})
+```
+
+这条流不需要别的开关。用 Vite 8.3.4 挡在自带示例应用前面实测：发布一次配置到客户端收到，用时 73–158ms，和直连后端一样快；Vite 默认开着 `server.compress`，流也没被压。两点 Vite 自己的特性，先知道省得误判成 bug：
+
+- 它只监听 IPv6 回环地址（`[::1]:5173`）。`http://localhost:5173` 打得开，`http://127.0.0.1:5173` 无响应。要用 `localhost` 打开，或者自己设 `server.host`。
+- 打包后的产物不带任何代理。把静态文件和接口部署到同一个源，或者用 `endpoint` 选项指向别的源。
+
+React 与 Vue 的接法如下 —— 两段都在真实浏览器里对着示例应用渲染过，也过了 `vite build`（React 19.3、Vue 3.5.44、npm 上已发布的 `@fatmii/nacos-web-config` 0.1.0）：
+
+```jsx
+import { useEffect, useState } from 'react'
+import { createWebConfig } from '@fatmii/nacos-web-config'
+
+const config = createWebConfig({
+  definitions: { ui: { fallback: { text: '公告已关闭' } } },
+})
+
+export function Announcement() {
+  const [ui, setUi] = useState(() => config.get('ui'))
+  useEffect(() => config.subscribe('ui', setUi), [])
+  return <p>{ui.value?.text}</p>
+}
+```
+
+```vue
+<script setup>
+import { onUnmounted, shallowRef } from 'vue'
+import { createWebConfig } from '@fatmii/nacos-web-config'
+
+const config = createWebConfig({
+  definitions: { ui: { fallback: { text: '公告已关闭' } } },
+})
+const ui = shallowRef(config.get('ui'))
+onUnmounted(config.subscribe('ui', (next) => { ui.value = next }))
+</script>
+
+<template>
+  <p>{{ ui.value?.text }}</p>
+</template>
+```
+
+两段都把客户端放在模块顶层，这是故意的：一个页面共用一条流，页面上所有组件都从它取值。两种"收尾"要分清楚 —— `subscribe()` 返回的函数**只摘掉你自己这个监听**，组件卸载不会动那条共用的流；整块视图真的不要了才调 `config.close()`，它会断流、清定时器、丢掉所有监听，可重复调用（之后再 `subscribe()` 抛 `CLIENT_CLOSED`）。
 
 ---
 

@@ -54,6 +54,7 @@
 - [Configuration reference](#configuration-reference)
 - [Operations (optional)](#operations-optional)
 - [Behind a gateway or proxy](#behind-a-gateway-or-proxy)
+- [Front-end dev server and framework wiring](#front-end-dev-server-and-framework-wiring)
 - [Compatibility](#compatibility)
 - [Limitations](#limitations)
 - [Changelog](./CHANGELOG.md)
@@ -315,6 +316,10 @@ publish is counted here, and its SHA-256 (never its body) goes to the
 `io.github.fatmii.nacoswebconfig.REJECTIONS` logger. The bundled demo host runs Actuator, so
 `java/examples/spring-mvc` shows both surfaces.
 
+`stream.connections` is an upper bound: a stream whose client vanished is released only when the
+next write to it fails — a heartbeat or a push — so it keeps counting for a moment after the browser
+disappears. In our runs it settled within about one heartbeat interval; refresh before you trust it.
+
 ---
 
 # Behind a gateway or proxy
@@ -356,6 +361,75 @@ request receives its `event:snapshot`.
 
 We measured nginx only. Cloud balancers, CDNs, HTTP/2 and dev-server proxies (Vite and friends)
 are not covered by these numbers — run the curl check above before trusting one.
+
+---
+
+# Front-end dev server and framework wiring
+
+The SDK always requests the same origin that served the page, so a local dev server only has to
+forward `/_web-config`:
+
+```js
+// vite.config.js
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  server: {
+    proxy: { '/_web-config': { target: 'http://127.0.0.1:8080' } },
+  },
+})
+```
+
+Nothing else is needed for the stream. Measured with Vite 8.3.4 in front of the bundled demo host:
+a config publish reached the client in 73–158 ms — the same as talking to the backend directly — and
+the stream stayed uncompressed even though Vite enables `server.compress` by default. Two
+properties of Vite worth knowing before you chase a phantom bug:
+
+- It listens on the IPv6 loopback only (`[::1]:5173`). `http://localhost:5173` works,
+  `http://127.0.0.1:5173` gets no answer. Open it as `localhost`, or set `server.host`.
+- A production build does not proxy anything. Ship the built files and the endpoint under the same
+  origin, or point the client elsewhere with the `endpoint` option.
+
+React and Vue wiring — both rendered in a real browser against the demo host and `vite build`-checked
+(React 19.3, Vue 3.5.44, the published `@fatmii/nacos-web-config` 0.1.0):
+
+```jsx
+import { useEffect, useState } from 'react'
+import { createWebConfig } from '@fatmii/nacos-web-config'
+
+const config = createWebConfig({
+  definitions: { ui: { fallback: { text: 'Announcements off' } } },
+})
+
+export function Announcement() {
+  const [ui, setUi] = useState(() => config.get('ui'))
+  useEffect(() => config.subscribe('ui', setUi), [])
+  return <p>{ui.value?.text}</p>
+}
+```
+
+```vue
+<script setup>
+import { onUnmounted, shallowRef } from 'vue'
+import { createWebConfig } from '@fatmii/nacos-web-config'
+
+const config = createWebConfig({
+  definitions: { ui: { fallback: { text: 'Announcements off' } } },
+})
+const ui = shallowRef(config.get('ui'))
+onUnmounted(config.subscribe('ui', (next) => { ui.value = next }))
+</script>
+
+<template>
+  <p>{{ ui.value?.text }}</p>
+</template>
+```
+
+Both keep the client at module level on purpose: that is what gives you one shared stream per page
+for every component that subscribes. Know which teardown call does what — the function returned by
+`subscribe()` removes **your listener** only, so unmounting a component never drops the shared
+stream. Call `config.close()` when the whole view goes away: it aborts the stream, clears timers and
+drops all listeners, and is idempotent (`subscribe()` afterwards throws `CLIENT_CLOSED`).
 
 ---
 
