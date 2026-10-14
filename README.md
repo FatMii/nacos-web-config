@@ -262,9 +262,19 @@ One logical key maps to one fixed Nacos config. Adding a key means editing `appl
 
 # Operations (optional)
 
-Nothing here is required to run the library. If your application uses Spring Boot Actuator (add
-`spring-boot-starter-actuator` if it does not), two things appear with no code of your own. A host
-without Actuator is untouched: no endpoint, no extra dependency, no startup requirement.
+Nothing here is required to run the library. If your application uses Spring Boot Actuator, two
+things appear with no code of your own. A host without Actuator is untouched: no endpoint, no extra
+dependency, no startup requirement.
+
+Turn it on by adding Spring's own Actuator starter — no version tag needed when you already import
+the Spring Boot BOM, and nothing from this library is involved:
+
+```xml
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
 
 **Health** — `GET /actuator/health/nacosWebConfig`
 
@@ -281,6 +291,18 @@ failing your readiness probe. Actuator hides these details by default;
 `management.endpoint.health.show-details=always` is what makes them visible.
 
 **Metrics** — `GET /actuator/metrics/<name>`
+
+Actuator's own default is to serve only `health` over HTTP, so the metric URLs below answer `404`
+until you expose the `metrics` endpoint as well — with `include: health` we measured exactly that:
+
+```yaml
+# application.yml
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+```
 
 | Metric | What it tells you |
 | --- | --- |

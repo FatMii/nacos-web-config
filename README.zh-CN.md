@@ -261,8 +261,16 @@ nacos-web-config:
 
 # 运维（可选）
 
-用这个库不需要任何运维配置。如果你的应用本身在用 Spring Boot Actuator（没用的话加上
-`spring-boot-starter-actuator`），下面两样会自动出现，不用写一行代码。没装 Actuator 的应用完全不受影响：没有端点、不多依赖、不影响启动。
+用这个库不需要任何运维配置。如果你的应用在用 Spring Boot Actuator，下面两样会自动出现，不用写一行代码。没装 Actuator 的应用完全不受影响：没有端点、不多依赖、不影响启动。
+
+打开方式就是加 Spring 官方的 Actuator 起步依赖（不需要写版本号，也不需要本库做任何配合）：
+
+```xml
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
 
 **健康检查** —— `GET /actuator/health/nacosWebConfig`
 
@@ -275,6 +283,17 @@ nacos-web-config:
 `source` 表示当前连不连得上 Nacos，也只有它会把这个组件判成 DOWN。内容被拒或被删掉时，浏览器仍在收上一次的有效值，所以这类情况只作为每个键各自的状态列出来（`ready` / `invalid` / `deleted` / `unavailable`，附稳定错误码），不会把应用的就绪探针搞失败。Actuator 默认隐藏这些细节，要看到它们需要配 `management.endpoint.health.show-details=always`。
 
 **指标** —— `GET /actuator/metrics/<名称>`
+
+Actuator 出厂默认只把 `health` 开放成 HTTP 端点，所以下面这些指标地址在你暴露 `metrics` 之前都是 404（实测过：只配 `include: health` 时指标地址返回 404）：
+
+```yaml
+# application.yml
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+```
 
 | 指标 | 说明 |
 | --- | --- |

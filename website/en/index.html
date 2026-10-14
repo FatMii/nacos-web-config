@@ -265,7 +265,7 @@
     </details>
     <details class="faq-item">
       <summary>What can I monitor in production?</summary>
-      <div class="faq-answer"><p>A host that runs Spring Boot Actuator automatically gains the health component <code>/actuator/health/nacosWebConfig</code>: whether Nacos is currently reachable, plus the state each key is serving (<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>). Three metrics appear as well: open stream count, frames written by frame kind, and refused publishes counted by reason code. A host without Actuator is untouched. Health details need <code>management.endpoint.health.show-details=always</code> — that is Boot's own default privacy policy.</p></div>
+      <div class="faq-answer"><p>A host that runs Spring Boot Actuator automatically gains the health component <code>/actuator/health/nacosWebConfig</code>: whether Nacos is currently reachable, plus the state each key is serving (<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>). Three metrics appear as well: open stream count, frames written by frame kind, and refused publishes counted by reason code. A host without Actuator is untouched. Two switches live on Spring Boot's side: health details need <code>management.endpoint.health.show-details=always</code>, and the metrics endpoint is not served over HTTP by default — without <code>management.endpoints.web.exposure.include: health,metrics</code> the metric URLs return 404, which we measured. The README's "Operations (optional)" section has paste-ready dependency and configuration snippets.</p></div>
     </details>
     <details class="faq-item">
       <summary>What does a gateway or reverse proxy need to get right?</summary>

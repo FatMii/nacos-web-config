@@ -265,7 +265,7 @@
     </details>
     <details class="faq-item">
       <summary>运维上能查到什么？</summary>
-      <div class="faq-answer"><p>装了 Spring Boot Actuator 的应用会自动多出一个健康组件 <code>/actuator/health/nacosWebConfig</code>：当前连不连得上 Nacos，以及每个键在服务什么状态（<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>）。另外三个指标：当前挂着的长连接数、按类型写出的帧数、被拒的发布次数（只按原因码打标，不带配置内容）。没装 Actuator 的应用完全没变化。健康细节要配 <code>management.endpoint.health.show-details=always</code> 才显示，那是 Spring Boot 自己的默认隐私策略。</p></div>
+      <div class="faq-answer"><p>装了 Spring Boot Actuator 的应用会自动多出一个健康组件 <code>/actuator/health/nacosWebConfig</code>：当前连不连得上 Nacos，以及每个键在服务什么状态（<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>）。另外三个指标：当前挂着的长连接数、按类型写出的帧数、被拒的发布次数（只按原因码打标，不带配置内容）。没装 Actuator 的应用完全没变化。两个开关都在 Spring Boot 自己那边：健康细节要配 <code>management.endpoint.health.show-details=always</code> 才显示；指标端点默认不对外开放，要配 <code>management.endpoints.web.exposure.include: health,metrics</code>，否则实测地址返回 404。README 的「运维（可选）」有可直接粘贴的依赖和配置片段。</p></div>
     </details>
     <details class="faq-item">
       <summary>经过 Nginx / 网关要注意什么？</summary>
