@@ -130,7 +130,7 @@ If Nacos is temporarily unreachable, values on the page are not cleared. They ar
 <dependency>
   <groupId>io.github.fatmii.nacoswebconfig</groupId>
   <artifactId>nacos-web-config-spring-boot-starter</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 

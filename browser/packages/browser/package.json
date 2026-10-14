@@ -1,6 +1,6 @@
 {
   "name": "@fatmii/nacos-web-config",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "Apache-2.0",
   "private": true,
   "description": "Browser SDK for receiving whitelisted Nacos JSON configs in real time over same-origin SSE from your existing Spring Boot backend.",
