@@ -9,7 +9,7 @@ Chinese version: [CHANGELOG.zh-CN.md](./CHANGELOG.zh-CN.md)
 
 On `0.x`, a minor bump may break compatibility; patches are fixes only. Breaking changes are marked **BREAKING**.
 
-## 0.2.0 — Unreleased
+## 0.2.0 — 2026-10-14
 
 ### Added
 

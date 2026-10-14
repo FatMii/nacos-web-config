@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for looking. One author maintains this project today. Issues and small PRs are welcome; for behavioral changes, open an issue first - and check [ROADMAP.md](ROADMAP.md) first, because its "Not planned" list is deliberate. Security: see [SECURITY.md](SECURITY.md). Do not file public security issues.
+Thanks for looking. One author maintains this project today. Issues and small PRs are welcome; for behavioral changes, open an issue first - and check [ROADMAP.md](ROADMAP.md) first, because its "Not planned" list is deliberate. Just want to ask something? [Discussions](https://github.com/FatMii/nacos-web-config/discussions) has a Q&A category. Security: see [SECURITY.md](SECURITY.md). Do not file public security issues.
 
 Chinese README: [README.zh-CN.md](README.zh-CN.md)
 
