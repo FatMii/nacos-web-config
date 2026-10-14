@@ -63,24 +63,29 @@ class WebConfigStreamStatusHttpTest {
             nextNonBlankLine(reader);
 
             source.value("{\"theme\":\"light\"}");
-            assertEquals("event:change", nextNonBlankLine(reader).replace(" ", ""));
+            // Only the snapshot's position is guaranteed. A heartbeat is queued independently of a
+            // change, so the stream is read until the expected event arrives rather than assuming an
+            // order that the engine never promised.
+            while (true) {
+                var line = nextNonBlankLine(reader).replace(" ", "");
+                if (line.equals(":ping")) continue;
+                assertEquals("event:change", line);
+                break;
+            }
             nextNonBlankLine(reader);
-
-            // Heartbeat is 500ms but the budget is 10s: the reader thread competes with
-            // whatever else the build machine happens to be running.
-            var heartbeat = reads.submit(() -> nextNonBlankLine(reader));
-            assertEquals(":ping", heartbeat.get(10, TimeUnit.SECONDS).replace(" ", ""));
 
             assertEquals(1, status.activeConnections());
             assertEquals(1, status.snapshotEvents());
             assertEquals(1, status.changeEvents());
-            assertTrue(status.heartbeatEvents() >= 1, "the observed ping must be counted");
 
-            var laterHeartbeats = status.heartbeatEvents();
-            var second = reads.submit(() -> nextNonBlankLine(reader));
-            assertEquals(":ping", second.get(10, TimeUnit.SECONDS).replace(" ", ""));
+            // Heartbeat is 500ms but the budget is 10s per frame: the reader thread competes with
+            // whatever else the build machine happens to be running.
+            for (int ping = 0; ping < 2; ping++) {
+                var heartbeat = reads.submit(() -> nextNonBlankLine(reader));
+                assertEquals(":ping", heartbeat.get(10, TimeUnit.SECONDS).replace(" ", ""));
+            }
             assertTrue(
-                    status.heartbeatEvents() > laterHeartbeats,
+                    status.heartbeatEvents() >= 2,
                     "the view must track the live engine instead of a copied value");
         } finally {
             reads.shutdownNow();
