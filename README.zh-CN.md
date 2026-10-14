@@ -22,7 +22,7 @@
   <a href="#"><img alt="Spring Boot" src="https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen"></a>
 </p>
 
-> **0.1.0** 已在 Maven Central 与 npm 发布。下面的快速开始从公共仓库安装。
+> **0.2.0** 已在 Maven Central 与 npm 发布。下面的快速开始从公共仓库安装。
 
 <p align="center">
   <a href="https://fatmii.github.io/nacos-web-config/architecture/pipeline.zh-CN.html">

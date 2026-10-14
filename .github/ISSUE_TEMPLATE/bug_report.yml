@@ -42,7 +42,7 @@ body:
     attributes:
       label: Versions
       description: Java starter, browser SDK, Spring Boot, Nacos client and server. `mvn dependency:tree` output for the first two is ideal.
-      placeholder: starter 0.1.0, SDK 0.1.0, Spring Boot 3.5.x, Nacos client 2.5.3, server 3.2.3
+      placeholder: starter 0.2.0, SDK 0.2.0, Spring Boot 3.5.x, Nacos client 2.5.3, server 3.2.3
     validations:
       required: true
   - type: input

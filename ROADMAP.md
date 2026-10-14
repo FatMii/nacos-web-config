@@ -8,7 +8,7 @@ requests use the [issue forms](https://github.com/FatMii/nacos-web-config/issues
 The rule that decides everything on this page is the one the README states: a browser may read a
 whitelist of Nacos JSON keys, and nothing else.
 
-## In 0.2.0 (merged, not published yet)
+## In 0.2.0 (released 2026-10-14)
 
 - Operational surface, optional: a `nacosWebConfig` health component and `nacos.webconfig.*` metrics
   for open streams, pushed frames and refused publishes. Hosts without Actuator are untouched.

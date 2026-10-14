@@ -7,7 +7,7 @@
 | latest `0.x` on `main` | yes |
 | older `0.x` releases | no (`0.x` has no separate security patch line; upgrade to the latest `0.x`) |
 
-0.1.0 was published to Maven Central and npm on 2026-09-29. Security fixes target the latest minor series.
+0.2.0 was published to Maven Central and npm on 2026-10-14. 0.1.0 was published to Maven Central on 2026-09-28 and to npm on 2026-09-29. Security fixes target the latest minor series.
 
 ## Reporting a Vulnerability
 
