@@ -55,6 +55,7 @@
 - [Operations (optional)](#operations-optional)
 - [Behind a gateway or proxy](#behind-a-gateway-or-proxy)
 - [Front-end dev server and framework wiring](#front-end-dev-server-and-framework-wiring)
+- [Chinese content, and Windows](#chinese-content-and-windows)
 - [Compatibility](#compatibility)
 - [Limitations](#limitations)
 - [Changelog](./CHANGELOG.md)
@@ -430,6 +431,44 @@ for every component that subscribes. Know which teardown call does what — the 
 `subscribe()` removes **your listener** only, so unmounting a component never drops the shared
 stream. Call `config.close()` when the whole view goes away: it aborts the stream, clears timers and
 drops all listeners, and is idempotent (`subscribe()` afterwards throws `CLIENT_CLOSED`).
+
+---
+
+# Chinese content, and Windows
+
+Chinese values are safe end to end: publish `{"banner":{"text":"系统将于今晚 23:30 维护"}}` and the browser
+receives those bytes untouched — the stream is UTF-8, and neither the client nor the SDK needs any
+charset setting. Verified against Nacos 2.5.3.
+
+What bites is the publishing step on Windows. Passing Chinese inline on the command line was measured
+to store **non-UTF-8 bytes** in Nacos:
+
+```bash
+# don't do this from Git Bash on Windows with Chinese inline
+curl -X POST http://127.0.0.1:8848/nacos/v1/cs/configs \
+  -d 'dataId=web-demo.public.json' -d 'group=WEB_DEMO' \
+  --data-urlencode 'content={"banner":{"text":"内联中文测试"}}'
+```
+
+The damaged value is still a syntactically valid JSON object, so the whitelist's content check does
+not reject it: we read back bytes that are not valid UTF-8 and the stream kept serving that key with
+`status: ready`. Nothing in the chain stops it, so the page is handed whatever the browser makes of
+those bytes. Publish from a UTF-8 file instead:
+
+```bash
+# content@ needs a Windows path here: the curl that ships with Windows cannot read /tmp/... paths
+curl -X POST http://127.0.0.1:8848/nacos/v1/cs/configs \
+  --data-urlencode 'dataId=web-demo.public.json' \
+  --data-urlencode 'group=WEB_DEMO' \
+  --data-urlencode 'content@D:/configs/web-demo.public.json'
+```
+
+A `decode` guard is the cheap backstop for this class of mistake: throw on a value that cannot be
+real (a text containing U+FFFD, a length that is too short, an unexpected character class) and the
+runtime keeps the last known good value instead of showing mojibake.
+
+If the console prints garbage, that alone does not prove the stored value is broken — read it back and
+decode it as UTF-8 before you start fixing the wrong side.
 
 ---
 

@@ -55,6 +55,7 @@
 - [运维（可选）](#运维可选)
 - [网关与反向代理](#网关与反向代理)
 - [前端开发代理与框架接法](#前端开发代理与框架接法)
+- [中文内容与 Windows](#中文内容与-windows)
 - [兼容性](#兼容性)
 - [局限](#局限)
 - [Changelog](./CHANGELOG.zh-CN.md)
@@ -394,6 +395,35 @@ onUnmounted(config.subscribe('ui', (next) => { ui.value = next }))
 ```
 
 两段都把客户端放在模块顶层，这是故意的：一个页面共用一条流，页面上所有组件都从它取值。两种"收尾"要分清楚 —— `subscribe()` 返回的函数**只摘掉你自己这个监听**，组件卸载不会动那条共用的流；整块视图真的不要了才调 `config.close()`，它会断流、清定时器、丢掉所有监听，可重复调用（之后再 `subscribe()` 抛 `CLIENT_CLOSED`）。
+
+---
+
+# 中文内容与 Windows
+
+中文值端到端是安全的：发布 `{"banner":{"text":"系统将于今晚 23:30 维护"}}`，浏览器拿到的就是这几个字节 —— 流本身是 UTF-8，客户端和 SDK 都不用设字符集。已在 Nacos 2.5.3 上实测。
+
+会咬人的是"发布"这一步，尤其在 Windows 上。实测在命令行里内联传中文，Nacos 存下的是**非 UTF-8 字节**：
+
+```bash
+# Windows 的 Git Bash 里不要这样内联中文
+curl -X POST http://127.0.0.1:8848/nacos/v1/cs/configs \
+  -d 'dataId=web-demo.public.json' -d 'group=WEB_DEMO' \
+  --data-urlencode 'content={"banner":{"text":"内联中文测试"}}'
+```
+
+坏掉的内容在语法上仍是合法 JSON 对象，白名单的内容校验不会拦：我们读回来的是非法 UTF-8 字节，而这条流一直把它当 `status: ready` 推出去。链路上没有任何一环会挡下来，页面只能拿到浏览器自行解释的结果。所以改成从 UTF-8 文件发布：
+
+```bash
+# content@ 后面这里必须给 Windows 路径：Windows 自带的 curl 读不到 /tmp/... 这种路径
+curl -X POST http://127.0.0.1:8848/nacos/v1/cs/configs \
+  --data-urlencode 'dataId=web-demo.public.json' \
+  --data-urlencode 'group=WEB_DEMO' \
+  --data-urlencode 'content@D:/configs/web-demo.public.json'
+```
+
+`decode` 是这类失误最便宜的兜底：对不可能是真的值直接抛错（含 U+FFFD 替换符的文本、短得不合常理、出现了不该有的字符），运行时就会保留上一次的有效值，而不是把乱码显示出去。
+
+控制台显示乱码，不代表服务端存的也坏了 —— 先把内容 GET 回来按 UTF-8 解一次，再决定去修哪一边。
 
 ---
 

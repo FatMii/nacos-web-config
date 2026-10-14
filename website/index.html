@@ -256,6 +256,10 @@
       <div class="faq-answer"><p>自己写轮询接口，鉴权、白名单映射、坏数据容错、推送与断线恢复都得自己扛。本项目把这些做成可复用能力：只放出你点名的配置、坏数据不弄挂页面、发布后直接推到页面，接入成本是依赖 + YAML + <code>subscribe()</code>。</p></div>
     </details>
     <details class="faq-item">
+      <summary>中文配置会不会乱码？</summary>
+      <div class="faq-answer"><p>推流这一路不会：内容是 UTF-8，浏览器侧不需要设字符集，实测中文值原样到达（Nacos 2.5.3）。要当心的是<strong>发布那一步</strong>：在 Windows 的命令行里内联传中文，实测存进 Nacos 的已经是非 UTF-8 字节，而它语法上仍是合法 JSON，内容校验拦不住，页面就只能显示一串乱码。做法是把内容写成 UTF-8 文件再发（<code>--data-urlencode "content@D:/绝对/路径.json"</code>，Windows 的 curl 读不到 <code>/tmp/...</code>），再用 <code>decode</code> 加一道兜底（含替换符或长度异常就抛错，运行时保留上一次的有效值）。详见 README「中文内容与 Windows」。</p></div>
+    </details>
+    <details class="faq-item">
       <summary>前端本地开发（Vite 这类）怎么接？</summary>
       <div class="faq-answer"><p>SDK 请求的是"发出页面的那个源"，所以开发服务器只要把 <code>/_web-config</code> 转发到后端就行：Vite 写 <code>server.proxy: { '/_web-config': { target: 'http://127.0.0.1:8080' } }</code>，别的开关都不需要。实测 Vite 8.3.4 挡在示例应用前面，发布一次配置到浏览器收到用 73–158ms，跟直连一样快，默认压缩也没把流压住。两个要注意的点：Vite 只监听 IPv6 回环，要用 <code>http://localhost:5173</code> 打开（<code>127.0.0.1</code> 无响应）；打包后的产物不带代理，静态文件和接口得同源的部署，或者用 <code>endpoint</code> 指到接口源。React / Vue 的接法在 README「前端开发代理与框架接法」里，两段都在真实浏览器里跑过。</p></div>
     </details>
