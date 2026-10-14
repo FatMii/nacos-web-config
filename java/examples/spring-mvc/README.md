@@ -82,7 +82,7 @@ npm run test:e2e
 mvn -pl examples/spring-mvc -am package spring-boot:repackage -DskipTests
 
 # 在 browser/ 目录运行；JAVA 路径按本机安装位置填写
-$env:NWC_E2E_HOST_JAR='D:\workspace\github\nacos-web-config\java\examples\spring-mvc\target\nacos-web-config-example-spring-mvc-0.1.0.jar'
+$env:NWC_E2E_HOST_JAR='D:\workspace\github\nacos-web-config\java\examples\spring-mvc\target\nacos-web-config-example-spring-mvc-0.2.0.jar'
 $env:NWC_E2E_JAVA='C:\path\to\jdk-17\bin\java.exe'
 $env:NWC_E2E_RESTART_ONLY='true'
 $env:NWC_E2E_BROWSER_EXECUTABLE='C:\Program Files\Google\Chrome\Application\chrome.exe'
@@ -95,7 +95,7 @@ npm run test:e2e:restart
 
 ```powershell
 $env:NWC_E2E_HOST='http://127.0.0.1:18081'
-$env:NWC_E2E_HOST_JAR='D:\workspace\github\nacos-web-config\java\examples\spring-mvc\target\nacos-web-config-example-spring-mvc-0.1.0.jar'
+$env:NWC_E2E_HOST_JAR='D:\workspace\github\nacos-web-config\java\examples\spring-mvc\target\nacos-web-config-example-spring-mvc-0.2.0.jar'
 $env:NWC_E2E_JAVA='C:\path\to\jdk-17\bin\java.exe'
 $env:NWC_E2E_PROXY_ONLY='true'
 $env:NWC_E2E_BROWSER_EXECUTABLE='C:\Program Files\Google\Chrome\Application\chrome.exe'
