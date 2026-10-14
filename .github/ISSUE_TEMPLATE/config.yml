@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/FatMii/nacos-web-config/security/advisories/new
+    about: Private advisory only. Never open a public issue for a vulnerability.
+  - name: Documentation and FAQ
+    url: https://fatmii.github.io/nacos-web-config/
+    about: Configuration reference, gateways, dev-server proxies, React and Vue wiring, operations.

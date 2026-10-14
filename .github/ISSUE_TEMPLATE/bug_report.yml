@@ -1,0 +1,64 @@
+name: Bug report
+description: Behaviour that does not match what the documentation states
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This tracker covers this library only. Vulnerabilities in the host application, in Nacos
+        Server itself, or findings that depend only on your environment are out of scope - and a
+        security problem must go through a private advisory, never a public issue. See
+        [SECURITY.md](https://github.com/FatMii/nacos-web-config/blob/main/SECURITY.md).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect
+      description: The HTTP status, the event frames you received and the `status` / `errorCode` you saw say more than prose.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Smallest reproduction
+      description: A repo or a single Java file plus the `nacos-web-config` block of your `application.yml`.
+      value: |
+        1.
+        2.
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: |
+        Paste the `nacos-web-config` block only. Do not paste the content of any Nacos config you are
+        exposing - if a value was rejected, the `REJECTIONS` log line already carries its SHA-256,
+        and that hash is enough for us.
+      render: yaml
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Java starter, browser SDK, Spring Boot, Nacos client and server. `mvn dependency:tree` output for the first two is ideal.
+      placeholder: starter 0.1.0, SDK 0.1.0, Spring Boot 3.5.x, Nacos client 2.5.3, server 3.2.3
+    validations:
+      required: true
+  - type: input
+    id: path
+    attributes:
+      label: What sits between the browser and your application
+      description: Gateway, ingress, CDN, dev-server proxy, and their buffering or read-timeout settings if you know them. Most reports that look like "push does not arrive" end here.
+      placeholder: nginx 1.28, proxy_buffering off, proxy_read_timeout 60s
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I checked the open and closed issues for the same symptom
+          required: true
+        - label: I read the Configuration reference and the gateway section of the README
+          required: true
+        - label: I am not including any configuration content in this report
+          required: true

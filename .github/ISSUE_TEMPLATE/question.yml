@@ -1,0 +1,32 @@
+name: Question
+description: How do I do X, or is this behaviour intended
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check these first, they answer most questions with less typing than an issue:
+        the [README configuration reference](https://github.com/FatMii/nacos-web-config#configuration-reference),
+        the gateway and front-end wiring sections of the same file, and the
+        [site FAQ](https://fatmii.github.io/nacos-web-config/).
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What you are trying to achieve, what you tried, and what the README says about it.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: starter 0.1.0, SDK 0.1.0, Spring Boot 3.5.x, Nacos server 2.5.3
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched issues for the same question
+          required: true
+        - label: I am not reporting a security problem (those need a private advisory, see SECURITY.md)
+          required: true

@@ -1,0 +1,45 @@
+name: Feature request
+description: Something this library should do that it does not do today
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please read [ROADMAP.md](https://github.com/FatMii/nacos-web-config/blob/main/ROADMAP.md)
+        first. The "Not planned" list there is deliberate, and a request that belongs to it will be
+        closed with a link rather than argued over - not because the need is wrong, but because this
+        project keeps one narrow job so that its security boundary stays auditable.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: The task and what you do today instead. A concrete page and a concrete Nacos config help more than a general wish.
+    validations:
+      required: true
+  - type: textarea
+    id: shape
+    attributes:
+      label: What the API would look like
+      description: The YAML keys, Java types or SDK calls you would want, even roughly.
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Where does it belong
+      description: A change to what the browser may read is a security-boundary change and needs the strongest justification.
+      options:
+        - Delivering the whitelisted JSON more reliably (transport, gateway, reconnect)
+        - Observability (health, metrics, logs)
+        - Integration ergonomics (examples, framework wiring, configuration)
+        - Widening or narrowing what a browser may read
+        - Something else
+    validations:
+      required: true
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Will you implement it
+      options:
+        - label: I am willing to send a pull request, and I have read CONTRIBUTING.md
+        - label: I can test a branch against my own Nacos 2.5.3 or 3.2.3 environment
