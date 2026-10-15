@@ -141,7 +141,7 @@
     <div class="spotlight-copy">
       <ul class="tag-list"><li class="tag">YAML</li><li class="tag">白名单</li></ul>
       <h3>授权写在 YAML 里</h3>
-      <p>对外暴露哪些配置，由白名单决定：逻辑名映射固定 Nacos 坐标，并带字节上限。登录与鉴权沿用宿主现有安全链，Starter 不自建登录。</p>
+      <p>对外暴露哪些配置，由白名单决定：逻辑名映射固定 Nacos 坐标，并带字节上限。登录与鉴权沿用你应用里现成的做法，Starter 不自建登录。</p>
     </div>
   </article>
 </section>
@@ -274,11 +274,11 @@
     </details>
     <details class="faq-item">
       <summary>运维上能查到什么？</summary>
-      <div class="faq-answer"><p>装了 Spring Boot Actuator 的应用会自动多出一个健康组件 <code>/actuator/health/nacosWebConfig</code>：当前连不连得上 Nacos，以及每个键在服务什么状态（<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>）。另外三个指标：当前挂着的长连接数、按类型写出的帧数、被拒的发布次数（只按原因码打标，不带配置内容）。没装 Actuator 的应用完全没变化。两个开关都在 Spring Boot 自己那边：健康明细默认隐藏（端点只显示 UP/DOWN），要在 <code>application.yml</code> 顶层配 <code>management.endpoint.health.show-details: always</code> 才显示；指标端点默认不对外开放，要配 <code>management.endpoints.web.exposure.include: health,metrics</code>，否则实测地址返回 404。README 的「运维（可选）」有可直接粘贴的依赖和配置片段。</p></div>
+      <div class="faq-answer"><p>装了 Spring Boot Actuator 的应用会自动多出一个健康组件：当前连不连得上 Nacos，以及每个键当前是什么状态（<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>）。另外三个指标：当前挂着的长连接数、按类型写出的帧数、被拒的发布次数（只按原因码打标，不带配置内容）。没装 Actuator 的应用完全没变化。两个开关都在 Spring Boot 自己那边，默认都是关的：不配 <code>management.endpoint.health.show-details: always</code>，<code>/actuator/health/nacosWebConfig</code> 直接返回 404，<code>/actuator/health</code> 里也只有 UP/DOWN；不配 <code>management.endpoints.web.exposure.include: health,metrics</code>，三个指标地址实测全是 404。README 的「运维（可选）」有可直接粘贴的依赖和配置片段，并附每个地址的实测响应。</p></div>
     </details>
     <details class="faq-item">
       <summary>经过 Nginx / 网关要注意什么？</summary>
-      <div class="faq-answer"><p>实测只有两件事会出问题。一，网关的空闲读超时（如 nginx <code>proxy_read_timeout</code>）必须<strong>大于</strong>心跳间隔（默认 15s），否则连接每个空闲窗口都被掐断——SDK 会自动重连、页面继续用上一次的有效值，但键的状态会周期性地标成过期。二，<code>Host</code> 头要用 <code>$http_host</code> 而不是 <code>$host</code>，否则宿主应用的登录跳转会把端口丢掉。缓冲一般不用你操心：响应里已经带了 <code>X-Accel-Buffering: no</code> 和 <code>Cache-Control: no-store</code>，nginx 会照着关缓冲。自查命令：<code>curl -N -H 'Accept: text/event-stream' https://你的域名/_web-config/v1/stream?key=ui</code>，应立刻看到 <code>event:snapshot</code>。README 的「网关与反向代理」有逐项实测数字，也说明了哪些网关我们没测过。</p></div>
+      <div class="faq-answer"><p>实测只有两件事会出问题。一，网关的空闲读超时（如 nginx <code>proxy_read_timeout</code>）必须<strong>大于</strong>心跳间隔（默认 15s），否则连接每个空闲窗口都被掐断——SDK 会自动重连、页面继续用上一次的有效值，但键的状态会周期性地标成过期。二，<code>Host</code> 头要用 <code>$http_host</code> 而不是 <code>$host</code>，否则你的应用的登录跳转会把端口丢掉。缓冲一般不用你操心：响应里已经带了 <code>X-Accel-Buffering: no</code> 和 <code>Cache-Control: no-store</code>，nginx 会照着关缓冲。自查命令：<code>curl -N -H 'Accept: text/event-stream' https://你的域名/_web-config/v1/stream?key=ui</code>，应立刻看到 <code>event:snapshot</code>。README 的「网关与反向代理」有逐项实测数字，也说明了哪些网关我们没测过。</p></div>
     </details>
     <details class="faq-item">
       <summary>有哪些限制？</summary>
@@ -292,7 +292,7 @@
     </details>
     <details class="faq-item">
       <summary>会带入哪些第三方依赖？会不会影响我已有的版本？</summary>
-      <div class="faq-answer"><p>只有 <code>nacos-client</code>（2.5.3）是我们带进来的。jackson、tomcat、spring 这些仍由你自己的 BOM 决定：实测一个只导入 Spring Boot 3.5.16 BOM 的消费者，解析到的是 <code>jackson-databind 2.21.4</code> 和 <code>tomcat-embed-core 10.1.55</code>，而不是我们自己构建里为了安全公告用的 2.21.7 / 10.1.60。想要那几个修复，得自己在 <code>dependencyManagement</code> 里提上去。反方向也成立：你把 <code>jackson-bom</code> 指定为 2.19.0，最终就是 2.19.0，我们不会拦也不会警告。想知道自己解析到什么版本，跑 <code>mvn dependency:tree</code> 看。README「兼容性 → 最终解析到你应用里的版本，由你自己的依赖管理决定」有完整对照表。</p></div>
+      <div class="faq-answer"><p>只有 <code>nacos-client</code>（2.5.3）是我们带进来的。jackson、tomcat、spring 这些仍由你自己的 BOM 决定：实测一个只导入 Spring Boot 3.5.16 BOM 的最小工程，最终用到的是 <code>jackson-databind 2.21.4</code> 和 <code>tomcat-embed-core 10.1.55</code>，而不是我们自己构建里为了安全公告用的 2.21.7 / 10.1.60。想要那几个修复，得自己在 <code>dependencyManagement</code> 里提上去。往低走也一样：你把 <code>jackson-bom</code> 指定为 2.19.0，最终就是 2.19.0，我们不会拦也不会警告。想知道自己工程最终用到哪个版本，跑 <code>mvn dependency:tree</code> 看。README「兼容性 → 你的应用最终用到哪个版本，由你自己的依赖管理决定」有完整对照表。</p></div>
     </details>
     <details class="faq-item">
       <summary>有没有全部配置项的清单？</summary>
@@ -330,7 +330,7 @@
     <h3>运维面与实测过的接入文档</h3>
     <p>可选的 Actuator 健康组件与三个指标；没在用 Actuator 的应用一点变化都没有。</p>
     <p>网关与反向代理、前端开发代理、React 与 Vue 接法、中文内容，全部按实测写进文档。</p>
-    <p>浏览器端到端在真实 Nacos 2.5.3 与 3.2.3 上跑 CI，含宿主重启与 Nginx 代理两条路径。</p>
+    <p>浏览器端到端在真实 Nacos 2.5.3 与 3.2.3 上跑 CI，含应用重启与 Nginx 代理两条路径。</p>
     <div class="pulse-latest-actions">
       <a class="button primary" href="https://github.com/FatMii/nacos-web-config/blob/main/CHANGELOG.zh-CN.md" target="_blank" rel="noreferrer">查看 Changelog</a>
       <a class="button" href="https://github.com/FatMii/nacos-web-config/releases" target="_blank" rel="noreferrer">GitHub Releases</a>

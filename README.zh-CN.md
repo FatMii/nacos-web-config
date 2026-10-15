@@ -46,19 +46,28 @@
 
 # 目录
 
+- [目录](#目录)
 - [它是什么](#它是什么)
 - [为什么需要它](#为什么需要它)
 - [核心特性](#核心特性)
+  - [只能看到你允许的配置](#只能看到你允许的配置)
+  - [坏数据不会弄挂页面](#坏数据不会弄挂页面)
+  - [发布后直接推到页面](#发布后直接推到页面)
+  - [断线、故障也能撑住](#断线故障也能撑住)
 - [快速开始](#快速开始)
+    - [前置条件](#前置条件)
+    - [1. 后端：引入 starter 并声明白名单](#1-后端引入-starter-并声明白名单)
+    - [2. 前端：订阅](#2-前端订阅)
 - [本地演示](#本地演示)
 - [配置参考](#配置参考)
+    - [键怎么划分：优先聚合键](#键怎么划分优先聚合键)
 - [运维（可选）](#运维可选)
 - [网关与反向代理](#网关与反向代理)
 - [前端开发代理与框架接法](#前端开发代理与框架接法)
 - [中文内容与 Windows](#中文内容与-windows)
 - [兼容性](#兼容性)
+    - [你的应用最终用到哪个版本，由你自己的依赖管理决定](#你的应用最终用到哪个版本由你自己的依赖管理决定)
 - [局限](#局限)
-- [Changelog](./CHANGELOG.zh-CN.md)
 - [安全](#安全)
 - [许可证](#许可证)
 
@@ -209,7 +218,7 @@ docker compose --project-name nacos-web-config-local up -d nacos2
 # 等控制台可打开：http://127.0.0.1:18848/nacos
 ```
 
-再启动参考宿主（注意端口是 `18848`，不是默认的 `8848`）：
+再启动示例应用（注意端口是 `18848`，不是默认的 `8848`）：
 
 ```powershell
 cd ..\java
@@ -255,7 +264,7 @@ nacos-web-config:
     connection-timeout: 30m         // 服务端到点关流；SDK 会自动重连并再取快照
     max-connections: 1000           // 同时在线流上限；超出回 429
     max-keys-per-connection: 32     // 单连接最多订阅几个逻辑名
-    max-pending-bytes-per-connection: 1MB  // 慢客户端积压预算；超限只掐断该连接
+    max-pending-bytes-per-connection: 1MB  // 慢客户端最多积压多少字节；超出就只掐断这一条连接
 
   startup:
     fail-fast: false                // true：启动时拿不到白名单配置则失败；默认应用照常起，页面先用兜底/旧值
@@ -269,9 +278,7 @@ nacos-web-config:
 
 # 运维（可选）
 
-用这个库不需要任何运维配置。如果你的应用在用 Spring Boot Actuator，下面两样会自动出现，不用写一行代码。没装 Actuator 的应用完全不受影响：没有端点、不多依赖、不影响启动。
-
-打开方式就是加 Spring 官方的 Actuator 起步依赖（不需要写版本号，也不需要本库做任何配合）：
+添加 Spring Boot Actuator（版本由你的 Spring Boot BOM 管，不用写版本号），再开两个开关。开关属 Spring Boot 的 `management` 配置，写在 `application.yml` 顶层，与 `nacos-web-config` 无关：
 
 ```xml
 <dependency>
@@ -280,7 +287,23 @@ nacos-web-config:
 </dependency>
 ```
 
-**健康检查** —— `GET /actuator/health/nacosWebConfig`
+```yaml
+# application.yml
+management:
+  endpoint:
+    health:
+      show-details: always        # 不开：/actuator/health/nacosWebConfig 返回 404，/actuator/health 里也只有 UP/DOWN
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics   # 不开：/actuator/metrics/** 全部 404
+```
+
+下面每个响应都取自示例应用 `java/examples/spring-mvc`，它已经配好这两个开关，可以逐条对着看。
+
+**健康组件：每个键当前在提供什么**
+
+`GET /actuator/health/nacosWebConfig`（实测；白名单里一个键、一切正常）：
 
 ```json
 {
@@ -288,48 +311,124 @@ nacos-web-config:
   "details": {
     "source": "available",
     "exposures": {
-      "ui": { "status": "ready", "hasValue": true }
+      "ui": { "hasValue": true, "status": "ready" }
     }
   }
 }
 ```
 
-`source` 表示当前连不连得上 Nacos，也只有它会让健康组件变成 DOWN。内容被拒收或被删除时，浏览器拿到的仍是上一次的有效值，所以这类情况只体现在每个键自己的状态上（`ready` / `invalid` / `deleted` / `unavailable`，外加稳定的错误码），不会让应用的就绪探针失败。
+`GET /actuator/health` 会列出应用里所有健康组件，这个库那一项叫 `nacosWebConfig`（实测，节选）：
 
-上面这份 `details` 默认看不到：Actuator 默认在 health 端点里只显示整体状态（UP / DOWN），不显示各组件的明细字段。想看到明细，在 `application.yml` 顶层加一段（这是 Spring Boot 的 `management` 配置，与 `nacos-web-config` 无关）：
-
-```yaml
-# application.yml
-management:
-  endpoint:
-    health:
-      show-details: always   # 明细对所有能访问 health 端点的人可见；只想给授权用户看就改 when-authorized
+```json
+{
+  "status": "UP",
+  "components": {
+    "nacosWebConfig": {
+      "status": "UP",
+      "details": {
+        "source": "available",
+        "exposures": {
+          "ui": { "hasValue": true, "status": "ready" }
+        }
+      }
+    },
+    "ping": { "status": "UP" }
+  }
+}
 ```
 
-配好后再访问 `/actuator/health` 或 `/actuator/health/nacosWebConfig`，就能看到上面那份 JSON。
+每个字段的意思：
 
-**指标** —— `GET /actuator/metrics/<名称>`
-
-Actuator 出厂默认只把 `health` 开放成 HTTP 端点，所以下面这些指标地址在你暴露 `metrics` 之前都是 404（实测过：只配 `include: health` 时指标地址返回 404）：
-
-```yaml
-# application.yml
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics
-```
-
-| 指标 | 说明 |
+| 字段 | 含义 |
 | --- | --- |
-| `nacos.webconfig.stream.connections` | 本进程当前挂着多少条 SSE 长连接 |
-| `nacos.webconfig.stream.events` | 写给浏览器的帧数，按类型打标：`kind=snapshot`、`change`、`heartbeat` |
-| `nacos.webconfig.rejections` | 被拒的发布次数，按原因码打标（`INVALID_JSON`、`TOO_LARGE`） |
+| 组件自己的 `status` | `UP` / `DOWN`，只看 `source` 那一项（Nacos 连不连得上）；某个键的内容坏了不影响它 |
+| `source` | `available` / `unavailable`：当前连不连得上 Nacos |
+| `exposures.<键>.status` | 这个键当前在提供什么：`ready` / `invalid` / `deleted` / `unavailable` |
+| `exposures.<键>.hasValue` | 服务端有没有一份能下发的值；`false` 时页面用的是前端 `fallback` |
+| `exposures.<键>.errorCode` | 只在出问题时出现，是稳定的错误码，措辞不会变 |
 
-计数只统计当前进程，重启归零。任何指标都不带配置内容：一次被拒的发布在这里只有一个计数，它的 SHA-256（绝不包含原文）进 `io.github.fatmii.nacoswebconfig.REJECTIONS` 日志。仓库自带的示例应用装了 Actuator，`java/examples/spring-mvc` 两样都能看到。
+四种状态分别是什么意思：
 
-`stream.connections` 是一个上界：客户端已经消失的流，要等服务端下一次往它写东西（心跳或推送）失败才会被放掉，所以浏览器关掉后这个数字还会多算一小会儿。我们这几轮实测大约在一个心跳周期内回落；看它之前先刷一次。
+| 你看到 | 发生了什么 | 页面此刻拿的是 |
+| --- | --- | --- |
+| `"ui": { "hasValue": true, "status": "ready" }` | 正常 | Nacos 里的最新值 |
+| `"ui": { "errorCode": "INVALID_JSON", "status": "invalid", "hasValue": true }` | 运营推的内容不合格（不是 JSON 对象，或超过 `max-bytes`） | 上一次的有效值，没被坏数据顶掉 |
+| `"ui": { "hasValue": false, "status": "deleted" }` | 这条配置被删了 | 前端自己写的默认值（`fallback`） |
+| `"ui": { "errorCode": "SOURCE_UNAVAILABLE", "status": "unavailable", "hasValue": true }`，组件同时 `DOWN` | 连不上 Nacos | 上一次的有效值，并标成过期 |
+
+关于探针（部署平台定期访问、用来判断这个实例能不能留用的健康检查地址）：
+- 内容被拒或被删时，这个组件仍是 `UP`，`GET /actuator/health` 仍返回 `200`；
+- 连不上 Nacos 时组件变 `DOWN`，`GET /actuator/health` 跟着变 `503`。
+- 探针地址若指向 `/actuator/health`，Nacos 连不上就会让探针失败——Spring Boot 会把所有组件的状态合并成一个结果。
+
+**三个指标：有多少连接、推了多少帧、拒了几次**
+
+三条地址，实测响应：
+
+- **当前挂着多少条流** —— `GET /actuator/metrics/nacos.webconfig.stream.connections`
+
+  ```json
+  {
+    "name": "nacos.webconfig.stream.connections",
+    "description": "SSE streams currently open in this process",
+    "measurements": [{ "statistic": "VALUE", "value": 1.0 }],
+    "availableTags": []
+  }
+  ```
+
+  `value` 是本进程当前的长连接数，这条指标没有标签。浏览器关掉后它不会立刻归零：服务端要等下一次向该流写入失败，才发现连接已经断了。心跳默认 15s，实测这次在断开后 8 秒归零，最迟不超过一个心跳周期。
+
+- **写给浏览器的帧数** —— `GET /actuator/metrics/nacos.webconfig.stream.events`，按 `kind` 分三类：`snapshot`（整份快照）、`change`（某条配置的变更）、`heartbeat`（心跳，一条 `:ping` 注释行，不带配置内容，只证明连接还活着）。不带标签查询给的是三者合计，`availableTags` 会列出可选的 `kind`：
+
+  ```json
+  {
+    "name": "nacos.webconfig.stream.events",
+    "description": "Frames the container accepted for writing, by frame kind",
+    "measurements": [{ "statistic": "COUNT", "value": 1.0 }],
+    "availableTags": [
+      { "tag": "kind", "values": ["heartbeat", "snapshot", "change"] }
+    ]
+  }
+  ```
+
+  只想看某一种就带上标签查，实测可用：`GET /actuator/metrics/nacos.webconfig.stream.events?tag=kind:snapshot`，返回的 `measurements` 里只有这一类的计数，`availableTags` 变空。`snapshot` 在每条流建立时算一次，`change` 只在配置真的变更后出现，`heartbeat` 持续增加说明这些连接还活着。
+
+- **被拒的发布次数** —— `GET /actuator/metrics/nacos.webconfig.rejections`，按 `code` 打标：
+
+  ```json
+  {
+    "name": "nacos.webconfig.rejections",
+    "description": "Publishes this runtime refused and kept serving the previous value",
+    "measurements": [{ "statistic": "COUNT", "value": 1.0 }],
+    "availableTags": [
+      { "tag": "code", "values": ["SOURCE_UNAVAILABLE", "INVALID_JSON", "TOO_LARGE"] }
+    ]
+  }
+  ```
+
+  `availableTags` 列了三个码，但只有 `INVALID_JSON` 和 `TOO_LARGE` 会计数：实测把 Nacos 停掉 30 秒，`?tag=code:SOURCE_UNAVAILABLE` 仍是 `0.0`。连不上不是一次被拒的发布，它体现在健康组件的 `source` 上。要看某一类拒了多少次：`?tag=code:INVALID_JSON`。
+
+计数只统计当前进程，重启归零。任何指标都不带配置内容。
+
+**怎么查是哪一次发布被拒了**
+
+内容每次被拒，应用日志里默认就有一行 WARN，logger 名 `io.github.fatmii.nacoswebconfig.REJECTIONS`。实测原样一行：
+
+```text
+2026-10-15T13:46:21.188+08:00  WARN 10184 --- [config-callback] i.g.fatmii.nacoswebconfig.REJECTIONS     : rejected content for exposure 'ui' (INVALID_JSON); serving last known good value; rejected sha256=sha256:82d233c9388c8fecc2e2dc5d93933ba3cfee384c0a8bd599e2b7decf7a24af69
+```
+
+带键名、原因码，以及被拒内容的 SHA-256，绝不带原文。要确认是不是某一次发布出的问题，把发布方那份内容算一次 SHA-256，跟日志里的哈希比对即可。
+
+**出问题按这个顺序查**
+
+| 现象 | 先看 | 说明什么 |
+| --- | --- | --- |
+| 页面值不动 | 健康组件的 `source` | `unavailable` 就是 Nacos 侧问题；页面仍在用上一次的值 |
+| `source: available`，但某个键 `invalid` | `rejections?tag=code:INVALID_JSON` 和那行 WARN | 有人往这个键推了不合格内容 |
+| 某个键 `deleted` | —— | 配置被删除了，前端改用自己在 `definitions` 里写的默认值（`fallback`），这是预期行为 |
+| `connections` 一直是 0 | 浏览器有没有发出那条请求 | 请求根本没到应用，下一步查「网关与反向代理」 |
+| 有连接、有帧，个别浏览器还是收不到 | `connections` 有数、`events` 在涨 | 那条连接自己太慢，积压超过 `stream.max-pending-bytes-per-connection` 后被单独掐断，不影响别人 |
 
 ---
 
@@ -353,10 +452,10 @@ curl -N -H 'Accept: text/event-stream' 'https://你的域名/_web-config/v1/stre
 | `proxy_read_timeout 5s` + `heartbeat: 2s` | 整段 14s 探测窗口内连接一直没断 |
 | `proxy_buffering` 开 / 关，以及加不加 `proxy_ignore_headers X-Accel-Buffering` | 四种组合都是 72–150ms：starter 本来就发 `X-Accel-Buffering: no` 和 `Cache-Control: no-store`，nginx 照做了。`proxy_buffering off` 我们仍然推荐，但**没能复现出缓冲延迟，所以不敢写成必须** |
 | `gzip on` 且包含 `text/event-stream` | 122ms，没测出额外延迟 |
-| 不写 `proxy_http_version 1.1`（用 HTTP/1.0 回源） | 107ms，同样没复现出问题 |
+| 不写 `proxy_http_version 1.1`（网关转发给后端时用 HTTP/1.0） | 107ms，同样没复现出问题 |
 | `proxy_set_header Host $host` | **会坏**：Spring Security 的登录跳转把端口丢了 —— `Location: http://127.0.0.1/login`。改成 `proxy_set_header Host $http_host` 后同一请求返回 `http://127.0.0.1:18089/login` |
 
-所以真正要紧的只有两项：`proxy_read_timeout` 要大于你的心跳间隔；如果宿主应用会发跳转，`Host` 要用 `$http_host`。starter 发出的响应头能原样穿过网关：`Content-Type: text/event-stream`、`Cache-Control: no-store`、`X-Accel-Buffering: no`。
+所以真正要紧的只有两项：`proxy_read_timeout` 要大于你的心跳间隔；如果你的应用会发登录跳转，`Host` 要用 `$http_host`。starter 发出的响应头能原样穿过网关：`Content-Type: text/event-stream`、`Cache-Control: no-store`、`X-Accel-Buffering: no`。
 
 `dev-environment/proxy/nginx.conf` 就是 CI 跑浏览器用例时用的那份配置。`access: authenticated` 在网关后面的表现和直连一致：匿名带 `Accept: text/event-stream` 拿到 `401` 和 JSON 错误体，`Accept: text/html` 拿到 `302` 登录跳转，登录后正常收到 `event:snapshot`。
 
@@ -463,24 +562,24 @@ curl -X POST http://127.0.0.1:8848/nacos/v1/cs/configs \
 | Nacos Server | 3.2.3 | 完整链路实测（Java IT + browser E2E；夜间 CI；Admin token 用 `dev-environment/scripts/fetch-nacos3-admin-token.mjs`） |
 | 浏览器 | 现代浏览器 | 需 `fetch` + `ReadableStream`，无 EventSource 回退 |
 
-### 最终解析到你应用里的版本，由你自己的依赖管理决定
+### 你的应用最终用到哪个版本，由你自己的依赖管理决定
 
-用一个只导入 `spring-boot-dependencies` 3.5.16、再加本库 starter 的一次性消费者工程实测：
+实测方法：临时建一个最小工程，只导入 `spring-boot-dependencies` 3.5.16，再加上这个 starter：
 
-| 构件 | 该消费者实际解析到 | 我们自己构建里用的 |
+| 构件 | 那个最小工程实际用到 | 我们自己的构建里用的 |
 | --- | --- | --- |
 | `jackson-databind` | `2.21.4`（听你的 BOM） | `2.21.7` |
 | `tomcat-embed-core` | `10.1.55`（听你的 BOM） | `10.1.60` |
 | `spring-webmvc` | `6.2.19`（听你的 BOM） | `6.2.19` |
 | `com.alibaba.nacos:nacos-client` | `2.5.3`（我们的，没有别人管它） | `2.5.3` |
 
-父 pom 里写死的那几个版本（原因写在父 pom 的注释里，多数是安全公告）只影响我们自己的构建和 CI，**不会传进你的依赖树**；需要这些版本的话，在你自己工程里管理。你的 `dependencyManagement` 在升、降两个方向都生效：在同一个消费者里导入 `jackson-bom` `2.19.0`，最终解析成 `jackson-databind:2.19.0`，降级了也不报错。想知道自己工程实际解析到什么版本，跑：
+父 pom 里写死的那几个版本（原因写在父 pom 的注释里，多数是安全公告）只影响我们自己的构建和 CI，**不会跟着 starter 传进你的工程**；需要这些版本的话，在你自己工程里管理。你的 `dependencyManagement` 往高往低都说了算：在同一个工程里导入 `jackson-bom` `2.19.0`，最终用到的就是 `jackson-databind:2.19.0`，降级了也不报错。想知道自己工程最终用到哪个版本，跑：
 
 ```bash
 mvn -Dincludes='com.fasterxml.jackson.core:*,org.apache.tomcat.embed:*' dependency:tree
 ```
 
-`nacos-client` 是唯一由我们带进来的第三方版本。如果你的应用本身也用 Nacos 客户端，就把版本统一在自己这边的依赖管理里；本库是照 `2.5.3` 这条线测的。
+`nacos-client` 是唯一由我们带进来的第三方版本。如果你的应用本身也用 Nacos 客户端，就把版本统一在自己这边的依赖管理里；本项目是照 `2.5.3` 这条线测的。
 
 ---
 

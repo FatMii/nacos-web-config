@@ -256,7 +256,7 @@ nacos-web-config:
     connection-timeout: 30m         // server closes the stream after this; SDK reconnects and refetches a snapshot
     max-connections: 1000           // concurrent stream cap; excess gets 429
     max-keys-per-connection: 32     // max logical names per browser connection
-    max-pending-bytes-per-connection: 1MB  // slow-consumer budget; over budget drops that connection only
+    max-pending-bytes-per-connection: 1MB  // how much a slow client may backlog; over budget drops that connection only
 
   startup:
     fail-fast: false                // true: abort startup if whitelisted configs are unavailable; default boots and uses fallback/stale until Nacos is up
@@ -270,12 +270,9 @@ One logical key maps to one fixed Nacos config. Adding a key means editing `appl
 
 # Operations (optional)
 
-Nothing here is required to run the library. If your application uses Spring Boot Actuator, two
-things appear with no code of your own. A host without Actuator is untouched: no endpoint, no extra
-dependency, no startup requirement.
-
-Turn it on by adding Spring's own Actuator starter — no version tag needed when you already import
-the Spring Boot BOM, and nothing from this library is involved:
+Add Spring Boot Actuator (the version comes from your Spring Boot BOM, you do not write one), then open
+two switches. They belong to Spring Boot's own `management` config, at the top level of
+`application.yml`, not to `nacos-web-config`:
 
 ```xml
 <dependency>
@@ -284,7 +281,24 @@ the Spring Boot BOM, and nothing from this library is involved:
 </dependency>
 ```
 
-**Health** — `GET /actuator/health/nacosWebConfig`
+```yaml
+# application.yml
+management:
+  endpoint:
+    health:
+      show-details: always        # without it: /actuator/health/nacosWebConfig answers 404
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics   # without it: every /actuator/metrics/** URL answers 404
+```
+
+Every response below was captured from the bundled demo host `java/examples/spring-mvc`, which already
+sets both switches, so you can click through them.
+
+**Health — what each key is serving right now**
+
+`GET /actuator/health/nacosWebConfig` (measured; one whitelisted key, all normal):
 
 ```json
 {
@@ -292,59 +306,138 @@ the Spring Boot BOM, and nothing from this library is involved:
   "details": {
     "source": "available",
     "exposures": {
-      "ui": { "status": "ready", "hasValue": true }
+      "ui": { "hasValue": true, "status": "ready" }
     }
   }
 }
 ```
 
-`source` is whether Nacos is currently reachable, and only it turns this component DOWN. A rejected
-or deleted config still serves its last-known-good value to browsers, so it shows up as a per-key
-state (`ready` / `invalid` / `deleted` / `unavailable`, plus the stable error code) instead of
-failing your readiness probe.
+`GET /actuator/health` lists every health component in the application; this library's entry is named
+`nacosWebConfig` (measured, abridged):
 
-That `details` object is hidden by default: Actuator serves only the overall status (UP / DOWN)
-until you opt in to details. Add this at the top level of `application.yml` (Spring Boot's own
-`management` config, unrelated to `nacos-web-config`):
-
-```yaml
-# application.yml
-management:
-  endpoint:
-    health:
-      show-details: always   # details visible to everyone who can reach the health endpoint; when-authorized restricts it
+```json
+{
+  "status": "UP",
+  "components": {
+    "nacosWebConfig": {
+      "status": "UP",
+      "details": {
+        "source": "available",
+        "exposures": {
+          "ui": { "hasValue": true, "status": "ready" }
+        }
+      }
+    },
+    "ping": { "status": "UP" }
+  }
+}
 ```
 
-With that in place, `/actuator/health` and `/actuator/health/nacosWebConfig` both return the JSON above.
+What each field means:
 
-**Metrics** — `GET /actuator/metrics/<name>`
-
-Actuator's own default is to serve only `health` over HTTP, so the metric URLs below answer `404`
-until you expose the `metrics` endpoint as well — with `include: health` we measured exactly that:
-
-```yaml
-# application.yml
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics
-```
-
-| Metric | What it tells you |
+| Field | Meaning |
 | --- | --- |
-| `nacos.webconfig.stream.connections` | SSE streams currently open in this process |
-| `nacos.webconfig.stream.events` | frames written to browsers, tagged `kind=snapshot`, `change`, `heartbeat` |
-| `nacos.webconfig.rejections` | publishes the runtime refused, tagged by reason code (`INVALID_JSON`, `TOO_LARGE`) |
+| the component's own `status` | `UP` / `DOWN`, driven by `source` alone; a rejected or deleted value for one key does not change it |
+| `source` | `available` / `unavailable`: whether Nacos is reachable right now |
+| `exposures.<key>.status` | what that key is serving: `ready` / `invalid` / `deleted` / `unavailable` |
+| `exposures.<key>.hasValue` | whether the server holds a value to send; when `false`, pages use their `fallback` |
+| `exposures.<key>.errorCode` | present only when something is wrong; a stable code whose wording never changes |
 
-Counts are per process and reset on restart. No metric carries configuration content: a refused
-publish is counted here, and its SHA-256 (never its body) goes to the
-`io.github.fatmii.nacoswebconfig.REJECTIONS` logger. The bundled demo host runs Actuator, so
-`java/examples/spring-mvc` shows both surfaces.
+What each state means in practice:
 
-`stream.connections` is an upper bound: a stream whose client vanished is released only when the
-next write to it fails — a heartbeat or a push — so it keeps counting for a moment after the browser
-disappears. In our runs it settled within about one heartbeat interval; refresh before you trust it.
+| You see | What happened | What the page holds |
+| --- | --- | --- |
+| `"ui": { "hasValue": true, "status": "ready" }` | normal | the newest value from Nacos |
+| `"ui": { "errorCode": "INVALID_JSON", "status": "invalid", "hasValue": true }` | someone published content that failed validation (not a JSON object, or over `max-bytes`) | the previous valid value; the bad one did not replace it |
+| `"ui": { "hasValue": false, "status": "deleted" }` | the configuration was deleted | the front-end `fallback` |
+| `"ui": { "errorCode": "SOURCE_UNAVAILABLE", "status": "unavailable", "hasValue": true }`, component `DOWN` | Nacos is unreachable | the previous valid value, marked stale |
+
+About probes: a rejected or deleted config leaves the component `UP` and `GET /actuator/health` still
+answers `200`; an unreachable Nacos turns the component `DOWN` and takes `GET /actuator/health` to
+`503`. A probe pointed at that URL therefore does fail during a Nacos outage — Spring Boot combines
+every component's status into one answer.
+
+**Three metrics: how many streams, how many frames, how many refusals**
+
+Three URLs and their measured responses:
+
+- **Streams open right now** — `GET /actuator/metrics/nacos.webconfig.stream.connections`
+
+  ```json
+  {
+    "name": "nacos.webconfig.stream.connections",
+    "description": "SSE streams currently open in this process",
+    "measurements": [{ "statistic": "VALUE", "value": 1.0 }],
+    "availableTags": []
+  }
+  ```
+
+  `value` is the count in this process; this metric has no tags. It does not fall the moment a browser
+  disappears: the server notices only when the next write to that stream fails. With the default 15 s
+  heartbeat, our run returned to zero 8 s after the client went away, so a just-closed browser leaves
+  the number slightly high for a moment.
+
+- **Frames written to browsers** — `GET /actuator/metrics/nacos.webconfig.stream.events`, tagged by
+  `kind`: `snapshot`, `change`, `heartbeat`. Without a tag you get the sum of the three, and
+  `availableTags` lists what you can filter on:
+
+  ```json
+  {
+    "name": "nacos.webconfig.stream.events",
+    "description": "Frames the container accepted for writing, by frame kind",
+    "measurements": [{ "statistic": "COUNT", "value": 1.0 }],
+    "availableTags": [
+      { "tag": "kind", "values": ["heartbeat", "snapshot", "change"] }
+    ]
+  }
+  ```
+
+  To see one kind, filter by tag — measured to work:
+  `GET /actuator/metrics/nacos.webconfig.stream.events?tag=kind:snapshot` returns only that kind's
+  count and an empty `availableTags`. `snapshot` counts once per stream, `change` appears only after a
+  real update, and a rising `heartbeat` means those connections are alive.
+
+- **Refused publishes** — `GET /actuator/metrics/nacos.webconfig.rejections`, tagged by `code`:
+
+  ```json
+  {
+    "name": "nacos.webconfig.rejections",
+    "description": "Publishes this runtime refused and kept serving the previous value",
+    "measurements": [{ "statistic": "COUNT", "value": 1.0 }],
+    "availableTags": [
+      { "tag": "code", "values": ["SOURCE_UNAVAILABLE", "INVALID_JSON", "TOO_LARGE"] }
+    ]
+  }
+  ```
+
+  `availableTags` lists three codes, but only `INVALID_JSON` and `TOO_LARGE` ever count. With Nacos
+  stopped for 30 s we measured `?tag=code:SOURCE_UNAVAILABLE` still at `0.0`: being unreachable is not
+  a refused publish, and it shows up in the health component's `source` instead. To see one kind of
+  refusal: `?tag=code:INVALID_JSON`.
+
+Counts are per process and reset on restart. No metric carries configuration content.
+
+**Tracing one bad publish**
+
+You do not need the metrics switched on for this: there is a WARN line by default, on the logger
+`io.github.fatmii.nacoswebconfig.REJECTIONS`. Measured, verbatim:
+
+```text
+2026-10-15T13:46:21.188+08:00  WARN 10184 --- [config-callback] i.g.fatmii.nacoswebconfig.REJECTIONS     : rejected content for exposure 'ui' (INVALID_JSON); serving last known good value; rejected sha256=sha256:82d233c9388c8fecc2e2dc5d93933ba3cfee384c0a8bd599e2b7decf7a24af69
+```
+
+It carries the key, the reason code, and the SHA-256 of the rejected content — never the content
+itself. To confirm a suspect publish, hash that file and compare.
+
+**What to check, in order**
+
+| Symptom | Look at first | What it means |
+| --- | --- | --- |
+| the page value does not move | the health component's `source` | `unavailable` is a Nacos-side problem; the page still holds the previous value |
+| `source: available` but one key is `invalid` | `rejections?tag=code:INVALID_JSON` and that WARN line | someone published rejected content to this key; the WARN names it |
+| a key reads `deleted` | nothing further | the config really was deleted, and the front end fell back to `fallback` |
+| `connections` stays at 0 | whether the browser sent the request at all | the request never reached the application; next check "Behind a gateway or proxy" |
+| streams and frames move, but one browser gets nothing | `connections` nonzero, `events` rising | that one stream is too slow and was dropped on its own once its backlog passed `stream.max-pending-bytes-per-connection`; nobody else is affected |
 
 ---
 
@@ -509,10 +602,10 @@ decode it as UTF-8 before you start fixing the wrong side.
 
 ### Who decides which versions end up in your application
 
-We do not. Measured with a throwaway consumer that imports `spring-boot-dependencies` 3.5.16 and
+We do not. Measured with a minimal test project that imports `spring-boot-dependencies` 3.5.16 and
 adds only this starter:
 
-| Artifact | Resolved in that consumer | Pinned in our own build |
+| Artifact | Used by that minimal project | Pinned in our own build |
 | --- | --- | --- |
 | `jackson-databind` | `2.21.4` — your BOM's choice | `2.21.7` |
 | `tomcat-embed-core` | `10.1.55` — your BOM's choice | `10.1.60` |
@@ -522,7 +615,7 @@ adds only this starter:
 The versions we pin in our parent pom (the reasons are commented there, mostly
 security advisories) protect our build and CI. They do not travel into your dependency tree, so if
 you want them, manage them yourself. Your `dependencyManagement` applies in both directions:
-importing `jackson-bom` `2.19.0` in that same consumer produced `jackson-databind:2.19.0`, a
+importing `jackson-bom` `2.19.0` in that same project produced `jackson-databind:2.19.0`, a
 downgrade, without any warning. To see what your own build actually resolves, run:
 
 ```bash
