@@ -30,7 +30,7 @@ with at least one `exposures` entry. Browser needs `fetch` + `ReadableStream`; t
 import { createWebConfig } from '@fatmii/nacos-web-config'
 
 const config = createWebConfig({
-  // endpoint defaults to '/_web-config/v1/stream', the starter's default route
+  endpoint: '/_web-config/v1/stream', // optional: the default value; pass it only after changing the starter's path
   definitions: {
     ui: { fallback: { announcement: '' } },
   },

@@ -17,13 +17,13 @@
 - `.github/workflows/e2e-nacos.yml`：对真实 Nacos **2.5.3** 与 **3.2.3** 跑浏览器端到端，覆盖三条路径 —— 正常推送、宿主重启后重连、经 Nginx 代理不缓冲。夜间、手动、推送时都会跑。
 - `dev-environment/scripts/fetch-nacos3-admin-token.mjs`：为这些用例拿 Nacos 3 Admin 短期 token，含首次启动时的管理员初始化。
 - `.github/workflows/publish-github-packages.yml`：Maven 与 npm 制品同时发布到 GitHub Packages。
-- 一批"实测再写"的文档：网关与反向代理（哪些设置真会咬人、哪些我们复现不出问题所以不写成必配）、前端本地开发代理与 React/Vue 接法、中文内容与 Windows 发布坑、"最终装进你应用的版本谁说了算"对照表，以及 `SECURITY.md` 里 SSE 那条豁免的适用边界。
+- 一批"实测再写"的文档：网关与反向代理（哪些设置真会影响链路、哪些我们复现不出问题所以不写成必配）、前端本地开发代理与 React/Vue 接法、中文内容与 Windows 发布坑、"最终解析到你应用里的版本，由你自己的依赖管理决定"对照表，以及 `SECURITY.md` 里 SSE 那条豁免的适用边界。
 - 官网：交互流程大图、真实推送录屏（替换原先的模拟演示）、中英双语 changelog。
 
 ### Changed
 
 - 兼容性：Nacos Server 3.2.3 的完整浏览器链路改为"已声称支持"，依据就是上面那条 E2E。
-- Jackson 从 2.18.11 提前钉到 2.21.7，以清掉 Spring Boot 3.5 这条线上的 HIGH/CRITICAL 门。CVE-2026-47890 则改为有记录的豁免：`spring-webmvc` 6.2.x 没有开源补丁版，本库只经 SSE 推 JSON 载荷，并且 `WebConfigNoViewFragmentOutputTest` 会在视图对象进入该路径时直接让构建失败。
+- Jackson 从 2.18.11 提前固定到 2.21.7，以清掉 Spring Boot 3.5 这条线上的 HIGH/CRITICAL 门。CVE-2026-47890 则改为有记录的豁免：`spring-webmvc` 6.2.x 没有开源补丁版，本库只经 SSE 推 JSON 载荷，并且 `WebConfigNoViewFragmentOutputTest` 会在视图对象进入该路径时直接让构建失败。
 - GitHub Pages 部署改为必须等 Verify 通过。
 
 ### Fixed
@@ -48,7 +48,7 @@
 
 - SDK：`decode`、`endpoint` 都可以不写（endpoint 默认 `/_web-config/v1/stream`）。
 - decode 失败又没传 `onError` 时，每个键最多 `console.warn` 一次，避免静默失败。
-- Spring Boot 升到 3.5.16，Jackson 到 2.18.11；tomcat-embed 钉到 10.1.60。
+- Spring Boot 升到 3.5.16，Jackson 到 2.18.11；tomcat-embed 固定到 10.1.60。
 - CI 扫到 HIGH/CRITICAL 会直接失败。
 - 几处计时敏感的 HTTP 测试加大了超时余量，减少忙碌机器上的误报。
 

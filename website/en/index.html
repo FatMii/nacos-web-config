@@ -95,7 +95,7 @@
         <tr><td>Ops publishes bad JSON</td><td>Rules are yours; the page often breaks</td><td><strong>Drop bad data; keep the last good value</strong></td></tr>
         <tr><td>Show updates soon after publish</td><td>Keep polling, or build push yourself</td><td><strong>Backend pushes changes</strong></td></tr>
         <tr><td>Nacos is briefly down</td><td>You invent the behavior</td><td><strong>Values on the page are not cleared</strong></td></tr>
-        <tr><td>Integration cost</td><td>Cache, protocol, tests</td><td><strong>Dependency + YAML + <code>subscribe()</code></strong></td></tr>
+        <tr><td>Integration cost</td><td>Cache, protocol, tests</td><td><strong>One dependency, a few lines of YAML, one <code>subscribe()</code> call</strong></td></tr>
       </tbody>
     </table>
   </div>
@@ -176,7 +176,7 @@
       <span class="p">max-bytes</span>: <span class="n">65536</span></code></pre>
         </div>
       </div>
-      <p class="qs-note">This exposes the SSE endpoint at <code>/_web-config/v1/stream</code> (override with <code>path</code>). Choose <code>access</code>: <code>public</code> (anyone who reaches the endpoint may read the whitelist) or <code>authenticated</code> (a stream opens only when the request already has a signed-in identity).</p>
+      <p class="qs-note">This exposes the SSE endpoint at <code>/_web-config/v1/stream</code>; to change it, set <code>path: /your-prefix</code> under <code>nacos-web-config:</code> in <code>application.yml</code>, same level as <code>enabled</code>. Choose <code>access</code>: <code>public</code> (anyone who reaches the endpoint may read the whitelist) or <code>authenticated</code> (a stream opens only when the request already has a signed-in identity).</p>
     </li>
     <li class="qs-step">
       <div class="qs-step-head"><span class="step-num">Step 2</span><h3>Frontend: subscribe</h3></div>
@@ -184,8 +184,9 @@
 <pre><code><span class="d">$</span> npm install @fatmii/nacos-web-config</code></pre>
 <pre><code><span class="k">import</span> { createWebConfig } <span class="k">from</span> <span class="s">'@fatmii/nacos-web-config'</span>
 
-<span class="c">// endpoint defaults to /_web-config/v1/stream; decode is optional</span>
 <span class="k">const</span> config = createWebConfig({
+  endpoint: <span class="s">'/_web-config/v1/stream'</span>, <span class="c">// optional: the default; pass it only after changing the starter's path</span>
+  <span class="c">// decode is likewise optional; add one when you need stricter checks</span>
   definitions: {
     ui: { fallback: { announcement: <span class="s">''</span> } },
   },
@@ -265,7 +266,7 @@
     </details>
     <details class="faq-item">
       <summary>What can I monitor in production?</summary>
-      <div class="faq-answer"><p>A host that runs Spring Boot Actuator automatically gains the health component <code>/actuator/health/nacosWebConfig</code>: whether Nacos is currently reachable, plus the state each key is serving (<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>). Three metrics appear as well: open stream count, frames written by frame kind, and refused publishes counted by reason code. A host without Actuator is untouched. Two switches live on Spring Boot's side: health details need <code>management.endpoint.health.show-details=always</code>, and the metrics endpoint is not served over HTTP by default — without <code>management.endpoints.web.exposure.include: health,metrics</code> the metric URLs return 404, which we measured. The README's "Operations (optional)" section has paste-ready dependency and configuration snippets.</p></div>
+      <div class="faq-answer"><p>A host that runs Spring Boot Actuator automatically gains the health component <code>/actuator/health/nacosWebConfig</code>: whether Nacos is currently reachable, plus the state each key is serving (<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>). Three metrics appear as well: open stream count, frames written by frame kind, and refused publishes counted by reason code. A host without Actuator is untouched. Two switches live on Spring Boot's side: health details are hidden by default (the endpoint serves only UP/DOWN) until you set <code>management.endpoint.health.show-details: always</code> at the top level of <code>application.yml</code>, and the metrics endpoint is not served over HTTP by default — without <code>management.endpoints.web.exposure.include: health,metrics</code> the metric URLs return 404, which we measured. The README's "Operations (optional)" section has paste-ready dependency and configuration snippets.</p></div>
     </details>
     <details class="faq-item">
       <summary>Will Chinese content get mangled?</summary>

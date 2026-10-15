@@ -90,12 +90,12 @@
       <thead><tr><th>场景</th><th>自己写 / 直连</th><th>nacos-web-config</th></tr></thead>
       <tbody>
         <tr><td>账号写到哪</td><td>写进前端谁都能看到；拿到账号还能改、删</td><td><strong>凭据只留在后端</strong></td></tr>
-        <tr><td>能放开多少</td><td>Nacos 按命名空间授权，没法只放开一条</td><td><strong>只放出你点名的那些名字</strong></td></tr>
-        <tr><td>对 Nacos 的暴露面</td><td>直接对外易被刷挂，依赖它的后端都会受影响</td><td><strong>网页只连你的后端</strong></td></tr>
+        <tr><td>能放开多少</td><td>Nacos 按命名空间授权，没法只放开一条</td><td><strong>只放行白名单里写明的配置</strong></td></tr>
+        <tr><td>对 Nacos 的暴露面</td><td>直接对外容易被流量压垮，依赖它的后端都会受影响</td><td><strong>网页只连你的后端</strong></td></tr>
         <tr><td>运营推了坏内容</td><td>规则自己定，页面容易直接挂</td><td><strong>丢掉坏数据，继续用上一份好的</strong></td></tr>
         <tr><td>发布后要尽快出现在页面</td><td>继续轮询，或自己做推送</td><td><strong>后端直接推变更</strong></td></tr>
         <tr><td>Nacos 临时挂了</td><td>自己约定怎么表现</td><td><strong>不把页面上的值清掉</strong></td></tr>
-        <tr><td>接入成本</td><td>缓存、协议、测试都自己扛</td><td><strong>依赖 + 一段 YAML + <code>subscribe()</code></strong></td></tr>
+        <tr><td>接入成本</td><td>缓存、协议、测试都自己扛</td><td><strong>加一个依赖、几行 YAML、一次 <code>subscribe()</code></strong></td></tr>
       </tbody>
     </table>
   </div>
@@ -176,7 +176,7 @@
       <span class="p">max-bytes</span>: <span class="n">65536</span></code></pre>
         </div>
       </div>
-      <p class="qs-note">启动后暴露 SSE 端点 <code>/_web-config/v1/stream</code>（可用 <code>path</code> 修改）。<code>access</code> 选 <code>public</code>（能访问端点即可读白名单）或 <code>authenticated</code>（请求上已有登录身份才接流）。</p>
+      <p class="qs-note">启动后暴露 SSE 端点 <code>/_web-config/v1/stream</code>；要换地址，在 <code>application.yml</code> 的 <code>nacos-web-config:</code> 下加 <code>path: /你的前缀</code>，与 <code>enabled</code> 同级。<code>access</code> 选 <code>public</code>（能访问端点即可读白名单）或 <code>authenticated</code>（请求上已有登录身份才接流）。</p>
     </li>
     <li class="qs-step">
       <div class="qs-step-head"><span class="step-num">Step 2</span><h3>前端订阅配置</h3></div>
@@ -184,8 +184,9 @@
 <pre><code><span class="d">$</span> npm install @fatmii/nacos-web-config</code></pre>
 <pre><code><span class="k">import</span> { createWebConfig } <span class="k">from</span> <span class="s">'@fatmii/nacos-web-config'</span>
 
-<span class="c">// endpoint 可省略（默认 /_web-config/v1/stream）；decode 可省略</span>
 <span class="k">const</span> config = createWebConfig({
+  endpoint: <span class="s">'/_web-config/v1/stream'</span>, <span class="c">// 可省略，默认就是它；后端改了 path 才需要传</span>
+  <span class="c">// decode 同样可省略，需要更强校验时再加</span>
   definitions: {
     ui: { fallback: { announcement: <span class="s">''</span> } },
   },
@@ -253,7 +254,7 @@
     </details>
     <details class="faq-item">
       <summary>后端随便开个接口给前端轮询，不就行了？</summary>
-      <div class="faq-answer"><p>自己写轮询接口，鉴权、白名单映射、坏数据容错、推送与断线恢复都得自己扛。本项目把这些做成可复用能力：只放出你点名的配置、坏数据不弄挂页面、发布后直接推到页面，接入成本是依赖 + YAML + <code>subscribe()</code>。</p></div>
+      <div class="faq-answer"><p>自己写轮询接口，鉴权、白名单映射、坏数据容错、推送与断线恢复都得自己扛。本项目把这些做成可复用能力：只放行白名单里写明的配置、坏数据不弄挂页面、发布后直接推到页面；接入成本是加一个依赖、几行 YAML，前端调一次 <code>subscribe()</code>。</p></div>
     </details>
     <details class="faq-item">
       <summary>中文配置会不会乱码？</summary>
@@ -265,7 +266,7 @@
     </details>
     <details class="faq-item">
       <summary>鉴权怎么做？</summary>
-      <div class="faq-answer"><p><code>access</code> 只有 <code>public</code> 与 <code>authenticated</code>，必须显式声明，否则启动失败。<code>public</code>：能访问端点即可读白名单（只读）。<code>authenticated</code>：请求上已有登录身份才接流；Starter 只看 <code>getUserPrincipal()</code>，不关心身份怎么挂上，也不自己登录。没有登录机制时一律 401。级别按整条流，不能逐键设。</p></div>
+      <div class="faq-answer"><p><code>access</code> 只有 <code>public</code> 与 <code>authenticated</code>，必须显式声明，否则启动失败。<code>public</code>：能访问端点即可读白名单（只读）。<code>authenticated</code>：请求上已有登录身份才接流；Starter 只看 <code>getUserPrincipal()</code>，不关心这个身份来自哪个组件，也不自己做登录。没有登录机制时一律 401。访问级别只配一次，对整条流生效，不能这个键公开、那个键要登录。</p></div>
     </details>
     <details class="faq-item">
       <summary>运营推了坏配置会怎样？</summary>
@@ -273,11 +274,11 @@
     </details>
     <details class="faq-item">
       <summary>运维上能查到什么？</summary>
-      <div class="faq-answer"><p>装了 Spring Boot Actuator 的应用会自动多出一个健康组件 <code>/actuator/health/nacosWebConfig</code>：当前连不连得上 Nacos，以及每个键在服务什么状态（<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>）。另外三个指标：当前挂着的长连接数、按类型写出的帧数、被拒的发布次数（只按原因码打标，不带配置内容）。没装 Actuator 的应用完全没变化。两个开关都在 Spring Boot 自己那边：健康细节要配 <code>management.endpoint.health.show-details=always</code> 才显示；指标端点默认不对外开放，要配 <code>management.endpoints.web.exposure.include: health,metrics</code>，否则实测地址返回 404。README 的「运维（可选）」有可直接粘贴的依赖和配置片段。</p></div>
+      <div class="faq-answer"><p>装了 Spring Boot Actuator 的应用会自动多出一个健康组件 <code>/actuator/health/nacosWebConfig</code>：当前连不连得上 Nacos，以及每个键在服务什么状态（<code>ready</code> / <code>invalid</code> / <code>deleted</code> / <code>unavailable</code>）。另外三个指标：当前挂着的长连接数、按类型写出的帧数、被拒的发布次数（只按原因码打标，不带配置内容）。没装 Actuator 的应用完全没变化。两个开关都在 Spring Boot 自己那边：健康明细默认隐藏（端点只显示 UP/DOWN），要在 <code>application.yml</code> 顶层配 <code>management.endpoint.health.show-details: always</code> 才显示；指标端点默认不对外开放，要配 <code>management.endpoints.web.exposure.include: health,metrics</code>，否则实测地址返回 404。README 的「运维（可选）」有可直接粘贴的依赖和配置片段。</p></div>
     </details>
     <details class="faq-item">
       <summary>经过 Nginx / 网关要注意什么？</summary>
-      <div class="faq-answer"><p>实测只有两件事会真咬人。一，网关的空闲读超时（如 nginx <code>proxy_read_timeout</code>）必须<strong>大于</strong>心跳间隔（默认 15s），否则连接每个空闲窗口都被掐断——SDK 会自动重连、页面继续用上一次的有效值，但会周期性变灰。二，<code>Host</code> 头要用 <code>$http_host</code> 而不是 <code>$host</code>，否则宿主应用的登录跳转会把端口丢掉。缓冲一般不用你操心：响应里已经带了 <code>X-Accel-Buffering: no</code> 和 <code>Cache-Control: no-store</code>，nginx 会照着关缓冲。自查命令：<code>curl -N -H 'Accept: text/event-stream' https://你的域名/_web-config/v1/stream?key=ui</code>，应立刻看到 <code>event:snapshot</code>。README 的「网关与反向代理」有逐项实测数字，也说明了哪些网关我们没测过。</p></div>
+      <div class="faq-answer"><p>实测只有两件事会出问题。一，网关的空闲读超时（如 nginx <code>proxy_read_timeout</code>）必须<strong>大于</strong>心跳间隔（默认 15s），否则连接每个空闲窗口都被掐断——SDK 会自动重连、页面继续用上一次的有效值，但会周期性变灰。二，<code>Host</code> 头要用 <code>$http_host</code> 而不是 <code>$host</code>，否则宿主应用的登录跳转会把端口丢掉。缓冲一般不用你操心：响应里已经带了 <code>X-Accel-Buffering: no</code> 和 <code>Cache-Control: no-store</code>，nginx 会照着关缓冲。自查命令：<code>curl -N -H 'Accept: text/event-stream' https://你的域名/_web-config/v1/stream?key=ui</code>，应立刻看到 <code>event:snapshot</code>。README 的「网关与反向代理」有逐项实测数字，也说明了哪些网关我们没测过。</p></div>
     </details>
     <details class="faq-item">
       <summary>有哪些限制？</summary>
@@ -291,11 +292,11 @@
     </details>
     <details class="faq-item">
       <summary>会带入哪些第三方依赖？会不会影响我已有的版本？</summary>
-      <div class="faq-answer"><p>只有 <code>nacos-client</code>（2.5.3）是我们带进来的。jackson、tomcat、spring 这些仍由你自己的 BOM 决定：实测一个只导入 Spring Boot 3.5.16 BOM 的消费者，解析到的是 <code>jackson-databind 2.21.4</code> 和 <code>tomcat-embed-core 10.1.55</code>，而不是我们自己构建里为了安全公告提前钉的 2.21.7 / 10.1.60 —— 想要那几个修复得你自己在 <code>dependencyManagement</code> 里提上去。反方向也成立：你把 <code>jackson-bom</code> 钉成 2.19.0，最终就是 2.19.0，我们不会拦也不会警告，所以别猜，跑 <code>mvn dependency:tree</code> 看。README「兼容性 → 最终装进你应用的那些版本，谁说了算」有完整对照表。</p></div>
+      <div class="faq-answer"><p>只有 <code>nacos-client</code>（2.5.3）是我们带进来的。jackson、tomcat、spring 这些仍由你自己的 BOM 决定：实测一个只导入 Spring Boot 3.5.16 BOM 的消费者，解析到的是 <code>jackson-databind 2.21.4</code> 和 <code>tomcat-embed-core 10.1.55</code>，而不是我们自己构建里为了安全公告用的 2.21.7 / 10.1.60。想要那几个修复，得自己在 <code>dependencyManagement</code> 里提上去。反方向也成立：你把 <code>jackson-bom</code> 指定为 2.19.0，最终就是 2.19.0，我们不会拦也不会警告。想知道自己解析到什么版本，跑 <code>mvn dependency:tree</code> 看。README「兼容性 → 最终解析到你应用里的版本，由你自己的依赖管理决定」有完整对照表。</p></div>
     </details>
     <details class="faq-item">
       <summary>有没有全部配置项的清单？</summary>
-      <div class="faq-answer"><p>有。README 的「配置参考」给了一份带默认值的完整 YAML，每项旁边用注释说明作用。原则只有一条：填错就启动失败并给精确报错，不会悄悄用默认值跑起来。</p></div>
+      <div class="faq-answer"><p>有。README 的「配置参考」给了一份带默认值的完整 YAML，每项旁边用注释说明作用。原则只有一条：填错就启动失败并给出精确报错，不会静默改用默认值。</p></div>
     </details>
     <details class="faq-item">
       <summary>要暴露多条配置，就要开多条连接吗？</summary>

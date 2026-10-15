@@ -79,18 +79,18 @@
 但网页不该自己去连 Nacos：
 
 - **账号不能写进前端。** 开发者工具里谁都能看到。拿到 Nacos 账号的人不只会读，还能改、删。
-- **没法只放开一条配置。** Nacos 按命名空间授权。你没法说：网页只能看这一条，同命名空间别的一律不准碰。
-- **直接对外很危险。** 谁都能打的话，配置中心容易被刷挂；一挂，依赖它的后端都会受影响。
+- **没法只放开一条配置。** Nacos 按命名空间授权，做不到"只给网页看这一条、同命名空间的别的一律不碰"。
+- **直接对外很危险。** 暴露到公网，谁都能请求它，请求一多就容易把配置中心压垮；配置中心一挂，依赖它的后端都会受影响。
 
 所以还是让你的 Spring Boot 去连 Nacos，网页只连自己的后端。你在配置里写清楚哪些名字可以给网页看，后端校验后再推过去。
 
 | 场景 | 自己写定时接口 | nacos-web-config |
 | --- | --- | --- |
-| 谁能看到什么 | 鉴权、映射都自己写 | **只放出你点名的那些名字** |
+| 谁能看到什么 | 鉴权、映射都自己写 | **只放行白名单里写明的配置** |
 | 运营推了坏内容 | 规则自己定，页面容易直接挂 | **丢掉坏数据，继续用上一份好的** |
 | 发布后要尽快出现在页面 | 继续轮询，或自己做推送 | **后端直接推变更** |
 | Nacos 临时挂了 | 自己约定怎么表现 | **不把页面上的值清掉** |
-| 接入成本 | 缓存、协议、测试都自己扛 | **依赖 + 一段 YAML + `subscribe()`** |
+| 接入成本 | 缓存、协议、测试都自己扛 | **加一个依赖、几行 YAML、一次 `subscribe()`** |
 
 ---
 
@@ -98,7 +98,7 @@
 
 ## 只能看到你允许的配置
 
-在 YAML 的 `exposures` 里写明：网页用的名字（比如 `ui`）对应 Nacos 里哪一条配置。前端只按这个名字订阅，看不到 Nacos 的地址、group、dataId。
+在 YAML 的 `exposures` 里给前端用的每个名字（比如 `ui`）指定它对应 Nacos 里的哪条配置。前端只按这个名字订阅，看不到 Nacos 的地址、group、dataId。
 
 还必须写明谁能连：`public`（谁都能读这些允许的配置）或 `authenticated`（只有已登录用户）。不写清楚，应用直接启动失败。
 
@@ -108,7 +108,7 @@
 
 ## 发布后直接推到页面
 
-后端用 SSE 推送变更，不用前端定时拉取。一条连接最多同时订 32 个名字；先发完整快照，再发之后的改动。顺序乱了前端会拒绝，然后重新拉一份完整数据，避免页面状态错乱。
+后端用 SSE 推送变更，不用前端定时拉取。一条连接最多同时订阅 32 个键；先发完整快照，再发之后的改动。顺序乱了前端会拒绝，然后重新拉一份完整数据，避免页面状态错乱。
 
 ## 断线、故障也能撑住
 
@@ -148,14 +148,19 @@ nacos-web-config:
       max-bytes: 65536
 ```
 
-启动后暴露 SSE 端点 `/_web-config/v1/stream`（可用 `path` 修改）。
+启动后暴露 SSE 端点 `/_web-config/v1/stream`。想换地址，在 `application.yml` 的 `nacos-web-config:` 下加一项 `path`（和 `enabled`、`access` 同级）：
+
+```yaml
+nacos-web-config:
+  path: /my-config-stream   # 端点前缀；推送流地址随之变为 /my-config-stream/v1/stream
+```
 
 **`access` 怎么选**
 
-- **`public`**：能访问端点的人都能读白名单配置（只读，读不到整库）。适合陌生人可见的公告。
-- **`authenticated`**：请求上已有登录身份才允许接流。Starter 只检查 `request.getUserPrincipal()` 是否非空，不问身份由谁挂上（Spring Security、自写 JWT/session 过滤器、容器认证均可），自己从不登录。
-- 应用里若没有任何组件设置身份，一律 401（故意关死）。
-- 级别是整条流一个，不能逐键设置。
+- **`public`**：能访问端点的人都能读白名单里的配置（只读；白名单之外的配置一条也拿不到）。适合陌生人可见的公告。
+- **`authenticated`**：请求上已有登录身份才允许接流。Starter 只检查 `request.getUserPrincipal()` 是否非空，不关心这个身份来自哪个组件（Spring Security、自写 JWT/session 过滤器、容器认证都可以），自己不做登录。
+- 应用里若没有任何组件设置身份，一律 401（默认全拒，不会误放行）。
+- 访问级别只配一次，对整条流生效：不能这个键公开、那个键要登录。
 
 ### 2. 前端：订阅
 
@@ -167,7 +172,7 @@ npm install @fatmii/nacos-web-config
 import { createWebConfig } from '@fatmii/nacos-web-config'
 
 const config = createWebConfig({
-  // endpoint 可省略（默认 '/_web-config/v1/stream'）；decode 可省略
+  endpoint: '/_web-config/v1/stream', // 可省略：默认就是这个值；后端改了 path 才需要传
   definitions: {
     ui: { fallback: { announcement: '' } },
   },
@@ -179,11 +184,12 @@ const unsubscribe = config.subscribe('ui', state => {
 // config.get('ui') 只读当前状态，不发网络请求；首次 subscribe() 才建立共享连接。
 ```
 
-页面要求更严时，给键加 `decode`：不合格值被拒收，保持最近有效值，键标为 `invalid`，经 `onError` 上报（未提供时每个键 `console.warn` 一次）：
+需要对值做进一步校验时，给键加 `decode`。校验不通过的值会被拒收：该键保留最近一次有效值、状态标为 `invalid`，错误经 `onError` 上报；没提供 `onError` 时，每个键打印一次 `console.warn`：
 
 ```ts
 ui: {
   fallback: { announcement: '' },
+  // decode 可省略：不提供时，后端校验过的 JSON 对象原样透传
   decode(value) {
     if (typeof value !== 'object' || value === null) throw new Error('ui must be an object')
     return { announcement: String((value as { announcement?: unknown }).announcement ?? '') }
@@ -219,7 +225,7 @@ mvn -pl examples/spring-mvc -am spring-boot:run
 
 # 配置参考
 
-所有项都在 `nacos-web-config` 前缀下。非法值会让应用**启动失败并给出精确报错**，不会悄悄给默认值。下面是一份带默认值的完整配置（`//` 仅作说明，真正 YAML 请改用 `#`）：
+所有项都在 `nacos-web-config` 前缀下。非法值会让应用**启动失败并给出精确报错**，不会静默改用默认值。下面是一份带默认值的完整配置（`//` 仅作说明，真正 YAML 请改用 `#`）：
 
 ```yaml
 nacos-web-config:
@@ -257,7 +263,7 @@ nacos-web-config:
 
 ### 键怎么划分：优先聚合键
 
-一个逻辑键对应一条固定 Nacos 配置；新增键要改 `application.yml` 并重启，对外可见范围每次扩大都留部署痕迹。高频改动的内容不必新键：暴露一个粗粒度键（如 `homepage`），字段放进那条 JSON，运营改一条即时生效。只在真实边界拆键：访问级别、负责人、大小预算不同。
+一个逻辑键对应一条固定 Nacos 配置。新增键要改 `application.yml` 并重启：对外可见范围的每次扩大都走一遍部署，不能运行时直接改。内容改得频繁也不需要加键：暴露一个粗粒度的键（如 `homepage`），把字段都放进那条 JSON，运营改内容就能即时生效。只有真存在边界时才拆键：访问级别不同、负责人不同、大小预算不同。
 
 ---
 
@@ -277,12 +283,30 @@ nacos-web-config:
 **健康检查** —— `GET /actuator/health/nacosWebConfig`
 
 ```json
-{"status":"UP",
- "details":{"source":"available",
-            "exposures":{"ui":{"status":"ready","hasValue":true}}}}
+{
+  "status": "UP",
+  "details": {
+    "source": "available",
+    "exposures": {
+      "ui": { "status": "ready", "hasValue": true }
+    }
+  }
+}
 ```
 
-`source` 表示当前连不连得上 Nacos，也只有它会把这个组件判成 DOWN。内容被拒或被删掉时，浏览器仍在收上一次的有效值，所以这类情况只作为每个键各自的状态列出来（`ready` / `invalid` / `deleted` / `unavailable`，附稳定错误码），不会把应用的就绪探针搞失败。Actuator 默认隐藏这些细节，要看到它们需要配 `management.endpoint.health.show-details=always`。
+`source` 表示当前连不连得上 Nacos，也只有它会让健康组件变成 DOWN。内容被拒收或被删除时，浏览器拿到的仍是上一次的有效值，所以这类情况只体现在每个键自己的状态上（`ready` / `invalid` / `deleted` / `unavailable`，外加稳定的错误码），不会让应用的就绪探针失败。
+
+上面这份 `details` 默认看不到：Actuator 默认在 health 端点里只显示整体状态（UP / DOWN），不显示各组件的明细字段。想看到明细，在 `application.yml` 顶层加一段（这是 Spring Boot 的 `management` 配置，与 `nacos-web-config` 无关）：
+
+```yaml
+# application.yml
+management:
+  endpoint:
+    health:
+      show-details: always   # 明细对所有能访问 health 端点的人可见；只想给授权用户看就改 when-authorized
+```
+
+配好后再访问 `/actuator/health` 或 `/actuator/health/nacosWebConfig`，就能看到上面那份 JSON。
 
 **指标** —— `GET /actuator/metrics/<名称>`
 
@@ -311,7 +335,7 @@ management:
 
 # 网关与反向代理
 
-推送通道是每个浏览器一条长期的 `text/event-stream` 响应。网关里最常"帮你优化"的两件事会咬到它：空闲读超时，以及被改写的 `Host` 头。
+推送通道是每个浏览器一条长期的 `text/event-stream` 响应。网关里最容易干扰这条流的是两件事：空闲读超时，以及被改写的 `Host` 头。
 
 一条命令就能自查任意网关（用浏览器实际访问的那个域名）：
 
@@ -319,7 +343,7 @@ management:
 curl -N -H 'Accept: text/event-stream' 'https://你的域名/_web-config/v1/stream?key=ui'
 ```
 
-应当立刻收到 `event:snapshot`，之后最长每隔 `nacos-web-config.stream.heartbeat`（默认 15s）收到一条 `:ping` 注释。安静超过一个心跳周期，就说明中间有个东西把流憋住了。
+应当立刻收到 `event:snapshot`，之后最长每隔 `nacos-web-config.stream.heartbeat`（默认 15s）收到一条 `:ping` 注释。安静超过一个心跳周期，就说明中间有一层把流缓冲住了。
 
 下面是把仓库自带示例应用放在 Nginx 1.28 后面实测的结果，每一行数字都是一次"发布配置 → 客户端收到第一个字节"的实测值：
 
@@ -394,7 +418,9 @@ onUnmounted(config.subscribe('ui', (next) => { ui.value = next }))
 </template>
 ```
 
-两段都把客户端放在模块顶层，这是故意的：一个页面共用一条流，页面上所有组件都从它取值。两种"收尾"要分清楚 —— `subscribe()` 返回的函数**只摘掉你自己这个监听**，组件卸载不会动那条共用的流；整块视图真的不要了才调 `config.close()`，它会断流、清定时器、丢掉所有监听，可重复调用（之后再 `subscribe()` 抛 `CLIENT_CLOSED`）。
+两段都把客户端放在模块顶层，这样整个页面共用一条流，各组件都从它取值。
+
+结束订阅和关闭流是两回事。`subscribe()` 返回的函数只移除这一次订阅的监听，组件卸载时用它清理，共用的流不受影响。整块视图不再需要时才调 `config.close()`：它会断开连接、清掉定时器、移除所有监听，可以重复调用；关闭之后再 `subscribe()` 会抛 `CLIENT_CLOSED`。
 
 ---
 
@@ -402,7 +428,7 @@ onUnmounted(config.subscribe('ui', (next) => { ui.value = next }))
 
 中文值端到端是安全的：发布 `{"banner":{"text":"系统将于今晚 23:30 维护"}}`，浏览器拿到的就是这几个字节 —— 流本身是 UTF-8，客户端和 SDK 都不用设字符集。已在 Nacos 2.5.3 上实测。
 
-会咬人的是"发布"这一步，尤其在 Windows 上。实测在命令行里内联传中文，Nacos 存下的是**非 UTF-8 字节**：
+容易出问题的是"发布"这一步，尤其在 Windows 上。实测在命令行里内联传中文，Nacos 存下的是**非 UTF-8 字节**：
 
 ```bash
 # Windows 的 Git Bash 里不要这样内联中文
@@ -437,18 +463,18 @@ curl -X POST http://127.0.0.1:8848/nacos/v1/cs/configs \
 | Nacos Server | 3.2.3 | 完整链路实测（Java IT + browser E2E；夜间 CI；Admin token 用 `dev-environment/scripts/fetch-nacos3-admin-token.mjs`） |
 | 浏览器 | 现代浏览器 | 需 `fetch` + `ReadableStream`，无 EventSource 回退 |
 
-### 最终装进你应用的那些版本，谁说了算
+### 最终解析到你应用里的版本，由你自己的依赖管理决定
 
-不是我们。用一个只导入 `spring-boot-dependencies` 3.5.16、再加本库 starter 的一次性消费者工程实测：
+用一个只导入 `spring-boot-dependencies` 3.5.16、再加本库 starter 的一次性消费者工程实测：
 
-| 构件 | 该消费者实际解析到 | 我们自己构建里钉的 |
+| 构件 | 该消费者实际解析到 | 我们自己构建里用的 |
 | --- | --- | --- |
 | `jackson-databind` | `2.21.4`（听你的 BOM） | `2.21.7` |
 | `tomcat-embed-core` | `10.1.55`（听你的 BOM） | `10.1.60` |
 | `spring-webmvc` | `6.2.19`（听你的 BOM） | `6.2.19` |
 | `com.alibaba.nacos:nacos-client` | `2.5.3`（我们的，没有别人管它） | `2.5.3` |
 
-我们在父 pom 里提前钉的那些版本（原因写在父 pom 的注释里，多数是安全公告）只保护我们自己的构建和 CI，**不会传进你的依赖树**；想要就在你自己的工程里管理。而且你的 `dependencyManagement` 两个方向都赢：在同一个消费者里导入 `jackson-bom` `2.19.0`，结果解析成 `jackson-databind:2.19.0`，降级了也不报错。所以别猜，直接看：
+父 pom 里写死的那几个版本（原因写在父 pom 的注释里，多数是安全公告）只影响我们自己的构建和 CI，**不会传进你的依赖树**；需要这些版本的话，在你自己工程里管理。你的 `dependencyManagement` 在升、降两个方向都生效：在同一个消费者里导入 `jackson-bom` `2.19.0`，最终解析成 `jackson-databind:2.19.0`，降级了也不报错。想知道自己工程实际解析到什么版本，跑：
 
 ```bash
 mvn -Dincludes='com.fasterxml.jackson.core:*,org.apache.tomcat.embed:*' dependency:tree

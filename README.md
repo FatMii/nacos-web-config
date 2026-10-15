@@ -79,7 +79,7 @@ Banners, feature flags, and campaign copy often live in Nacos. Ops wants the liv
 But the page should not talk to Nacos itself:
 
 - **Do not put the password in the frontend.** Anyone can see it in DevTools. A stolen Nacos account can change or delete configs, not only read them.
-- **You cannot open just one config.** Nacos authorizes by namespace. There is no switch for “the page may read only this one; leave the rest alone.”
+- **You cannot open just one config.** Nacos authorizes by namespace: you cannot grant a page access to one config and leave the rest of the namespace alone.
 - **Opening it to the public is risky.** Anyone can hammer it. If it goes down, every backend that depends on it is affected.
 
 So let your Spring Boot app talk to Nacos, and let the page talk only to your app. You list which names the page may see; the backend checks them and pushes updates.
@@ -90,7 +90,7 @@ So let your Spring Boot app talk to Nacos, and let the page talk only to your ap
 | Ops publishes bad JSON | Rules are yours; the page often breaks | **Drop bad data; keep the last good value** |
 | Show updates soon after publish | Keep polling, or build push yourself | **Backend pushes changes** |
 | Nacos is briefly down | You invent the behavior | **Values on the page are not cleared** |
-| Integration cost | Cache, protocol, tests | **Dependency + YAML + `subscribe()`** |
+| Integration cost | Cache, protocol, tests | **One dependency, a few lines of YAML, one `subscribe()` call** |
 
 ---
 
@@ -148,13 +148,18 @@ nacos-web-config:
       max-bytes: 65536
 ```
 
-This exposes the SSE endpoint at `/_web-config/v1/stream` (override with `path`).
+This exposes the SSE endpoint at `/_web-config/v1/stream`. To change it, add a `path` entry under `nacos-web-config:` in `application.yml` (same level as `enabled` and `access`):
+
+```yaml
+nacos-web-config:
+  path: /my-config-stream   # the stream then lives at /my-config-stream/v1/stream
+```
 
 **Choosing `access`**
 
 - **`public`**: anyone who can reach the endpoint may read the whitelisted content (read-only, never the whole store). Use it for announcements strangers may see.
 - **`authenticated`**: a stream opens only when the request already has a signed-in identity. The starter checks `request.getUserPrincipal()` and does not care which component set it (Spring Security, JWT/session filter, container auth). It never logs anyone in.
-- If nothing sets a principal, every connection gets 401 (fail-closed on purpose).
+- If nothing sets a principal, every connection gets 401 (fail-closed).
 - Access is per stream, not per key.
 
 ### 2. Frontend: subscribe
@@ -167,7 +172,7 @@ npm install @fatmii/nacos-web-config
 import { createWebConfig } from '@fatmii/nacos-web-config'
 
 const config = createWebConfig({
-  // endpoint defaults to '/_web-config/v1/stream'; decode is optional
+  endpoint: '/_web-config/v1/stream', // optional: the default value; pass it only after changing the starter's path
   definitions: {
     ui: { fallback: { announcement: '' } },
   },
@@ -180,11 +185,12 @@ const unsubscribe = config.subscribe('ui', state => {
 // the shared connection opens on the first subscribe().
 ```
 
-For a stricter page, add a `decode` guard. Rejected values keep last-known-good, mark the key `invalid`, and surface via `onError` (or one `console.warn` per key if `onError` is absent):
+When your page needs stricter checks, add a `decode` guard. A rejected value keeps the last known good value, marks the key `invalid`, and surfaces via `onError` (or one `console.warn` per key if `onError` is absent):
 
 ```ts
 ui: {
   fallback: { announcement: '' },
+  // optional: without it, the server-validated JSON object passes through as-is
   decode(value) {
     if (typeof value !== 'object' || value === null) throw new Error('ui must be an object')
     return { announcement: String((value as { announcement?: unknown }).announcement ?? '') }
@@ -258,7 +264,7 @@ nacos-web-config:
 
 ### Prefer aggregate keys
 
-One logical key maps to one fixed Nacos config. Adding a key means editing `application.yml` and restarting, so every widening of the public surface leaves a deploy trail. For content that changes often, expose one coarse key (e.g. `homepage`) and put the fields in its JSON body. Ops edits take effect live with no new exposure and no restart. Split keys only on real boundaries: different access level, owner, or size budget.
+One logical key maps to one fixed Nacos config. Adding a key means editing `application.yml` and restarting: every widening of the public surface goes through a deploy and cannot be changed at runtime. Content that changes often needs no new key: expose one coarse key (e.g. `homepage`) and put the fields in its JSON body, and an ops edit goes live immediately. Split keys only on real boundaries: different access level, owner, or size budget.
 
 ---
 
@@ -281,16 +287,35 @@ the Spring Boot BOM, and nothing from this library is involved:
 **Health** — `GET /actuator/health/nacosWebConfig`
 
 ```json
-{"status":"UP",
- "details":{"source":"available",
-            "exposures":{"ui":{"status":"ready","hasValue":true}}}}
+{
+  "status": "UP",
+  "details": {
+    "source": "available",
+    "exposures": {
+      "ui": { "status": "ready", "hasValue": true }
+    }
+  }
+}
 ```
 
 `source` is whether Nacos is currently reachable, and only it turns this component DOWN. A rejected
 or deleted config still serves its last-known-good value to browsers, so it shows up as a per-key
 state (`ready` / `invalid` / `deleted` / `unavailable`, plus the stable error code) instead of
-failing your readiness probe. Actuator hides these details by default;
-`management.endpoint.health.show-details=always` is what makes them visible.
+failing your readiness probe.
+
+That `details` object is hidden by default: Actuator serves only the overall status (UP / DOWN)
+until you opt in to details. Add this at the top level of `application.yml` (Spring Boot's own
+`management` config, unrelated to `nacos-web-config`):
+
+```yaml
+# application.yml
+management:
+  endpoint:
+    health:
+      show-details: always   # details visible to everyone who can reach the health endpoint; when-authorized restricts it
+```
+
+With that in place, `/actuator/health` and `/actuator/health/nacosWebConfig` both return the JSON above.
 
 **Metrics** — `GET /actuator/metrics/<name>`
 
@@ -426,11 +451,11 @@ onUnmounted(config.subscribe('ui', (next) => { ui.value = next }))
 </template>
 ```
 
-Both keep the client at module level on purpose: that is what gives you one shared stream per page
-for every component that subscribes. Know which teardown call does what — the function returned by
-`subscribe()` removes **your listener** only, so unmounting a component never drops the shared
-stream. Call `config.close()` when the whole view goes away: it aborts the stream, clears timers and
-drops all listeners, and is idempotent (`subscribe()` afterwards throws `CLIENT_CLOSED`).
+Both keep the client at module level, so the whole page shares one stream and every component
+subscribes to it. The two teardown calls do different jobs. The function returned by `subscribe()`
+removes only that listener, so unmounting a component never drops the shared stream. Call
+`config.close()` when the whole view goes away: it aborts the stream, clears timers, drops all
+listeners, and is idempotent; `subscribe()` afterwards throws `CLIENT_CLOSED`.
 
 ---
 
@@ -496,9 +521,9 @@ adds only this starter:
 
 The versions we ahead-pin in our parent pom (the reasons are commented there, mostly
 security advisories) protect our build and CI. They do not travel into your dependency tree, so if
-you want them, manage them yourself. And your `dependencyManagement` wins in both directions:
+you want them, manage them yourself. Your `dependencyManagement` applies in both directions:
 importing `jackson-bom` `2.19.0` in that same consumer produced `jackson-databind:2.19.0`, a
-downgrade, without any warning. Check what you actually get rather than assuming:
+downgrade, without any warning. To see what your own build actually resolves, run:
 
 ```bash
 mvn -Dincludes='com.fasterxml.jackson.core:*,org.apache.tomcat.embed:*' dependency:tree

@@ -42,7 +42,7 @@ We will not build these, and a PR adding one is likely to be closed rather than 
 
 - An admin UI. Configuration is authored in the Nacos console; this project streams it read-only.
 - Changing the `exposures` whitelist at runtime. The allowlist is fixed at startup on purpose, so
-  every widening of the public surface leaves a deploy trail.
+  every widening of the public surface goes through a deploy.
 - WebFlux, or any reactive server. Servlet MVC only.
 - Turning the payload into anything other than a JSON object, or raising the size cap on behalf of a
   single page.
