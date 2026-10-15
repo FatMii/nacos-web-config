@@ -226,7 +226,7 @@
       <tbody>
         <tr><td>Java</td><td><code>17+</code></td><td>Spring Boot 3.x，Servlet/MVC</td></tr>
         <tr><td>Nacos Client</td><td><code>2.5.3</code></td><td>唯一支持的客户端线</td></tr>
-        <tr><td>Nacos Server</td><td><code>2.5.3</code></td><td>含浏览器完整链路实测（Java 测试 + browser E2E）</td></tr>
+        <tr><td>Nacos Server</td><td><code>2.5.3</code></td><td>完整链路实测（Java IT + browser E2E；夜间 CI）</td></tr>
         <tr><td>Nacos Server</td><td><code>3.2.3</code></td><td>完整链路实测（Java IT + browser E2E；夜间 CI）</td></tr>
         <tr><td>浏览器</td><td>现代浏览器</td><td>需 <code>fetch</code> + <code>ReadableStream</code>，无 EventSource 回退</td></tr>
       </tbody>
@@ -278,7 +278,7 @@
     </details>
     <details class="faq-item">
       <summary>经过 Nginx / 网关要注意什么？</summary>
-      <div class="faq-answer"><p>实测只有两件事会出问题。一，网关的空闲读超时（如 nginx <code>proxy_read_timeout</code>）必须<strong>大于</strong>心跳间隔（默认 15s），否则连接每个空闲窗口都被掐断——SDK 会自动重连、页面继续用上一次的有效值，但会周期性变灰。二，<code>Host</code> 头要用 <code>$http_host</code> 而不是 <code>$host</code>，否则宿主应用的登录跳转会把端口丢掉。缓冲一般不用你操心：响应里已经带了 <code>X-Accel-Buffering: no</code> 和 <code>Cache-Control: no-store</code>，nginx 会照着关缓冲。自查命令：<code>curl -N -H 'Accept: text/event-stream' https://你的域名/_web-config/v1/stream?key=ui</code>，应立刻看到 <code>event:snapshot</code>。README 的「网关与反向代理」有逐项实测数字，也说明了哪些网关我们没测过。</p></div>
+      <div class="faq-answer"><p>实测只有两件事会出问题。一，网关的空闲读超时（如 nginx <code>proxy_read_timeout</code>）必须<strong>大于</strong>心跳间隔（默认 15s），否则连接每个空闲窗口都被掐断——SDK 会自动重连、页面继续用上一次的有效值，但键的状态会周期性地标成过期。二，<code>Host</code> 头要用 <code>$http_host</code> 而不是 <code>$host</code>，否则宿主应用的登录跳转会把端口丢掉。缓冲一般不用你操心：响应里已经带了 <code>X-Accel-Buffering: no</code> 和 <code>Cache-Control: no-store</code>，nginx 会照着关缓冲。自查命令：<code>curl -N -H 'Accept: text/event-stream' https://你的域名/_web-config/v1/stream?key=ui</code>，应立刻看到 <code>event:snapshot</code>。README 的「网关与反向代理」有逐项实测数字，也说明了哪些网关我们没测过。</p></div>
     </details>
     <details class="faq-item">
       <summary>有哪些限制？</summary>

@@ -519,7 +519,7 @@ adds only this starter:
 | `spring-webmvc` | `6.2.19` — your BOM's choice | `6.2.19` |
 | `com.alibaba.nacos:nacos-client` | `2.5.3` — ours; nothing else manages it | `2.5.3` |
 
-The versions we ahead-pin in our parent pom (the reasons are commented there, mostly
+The versions we pin in our parent pom (the reasons are commented there, mostly
 security advisories) protect our build and CI. They do not travel into your dependency tree, so if
 you want them, manage them yourself. Your `dependencyManagement` applies in both directions:
 importing `jackson-bom` `2.19.0` in that same consumer produced `jackson-databind:2.19.0`, a
